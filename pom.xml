@@ -21,8 +21,8 @@
 	<url>http://github.com/yargo13</url>
 	<inceptionYear>2012</inceptionYear>
 	<organization>
-		<name>My Company</name>
-		<url>http://mycompany.com/</url>
+		<name>Yargo</name>
+		<url>http://github.com/yargo13</url>
 	</organization>
 	<licenses>
 		<license>
@@ -43,8 +43,8 @@
 	<developers>
 		<developer>
 			<id>yargo13</id>
-			<name>Yargo tessaro</name>
-			<url>http://imagej.net/User:Rueden</url>
+			<name>Yargo Vó Tessaro</name>
+			<url>https://github.com/yargo13/</url>
 			<roles>
 				<role>lead</role>
 				<role>developer</role>
@@ -57,25 +57,22 @@
 	</developers>
 	<contributors>
 		<contributor>
-			<name>Johannes Schindelin</name>
-			<url>http://imagej.net/User:Schindelin</url>
-			<roles><role>founder</role></roles>
-			<properties><id>dscho</id></properties>
+			<name>Yargo Vó Tessaro</name>
+			<url>http://github.com/yargo13</url>
 		</contributor>
 	</contributors>
 
 	<mailingLists>
 		<mailingList>
-			<name>Image.sc Forum</name>
-			<archive>https://forum.image.sc/</archive>
+			<name>No Mailing List</name>
 		</mailingList>
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/imagej/example-legacy-plugin</connection>
-		<developerConnection>scm:git:git@github.com:imagej/example-legacy-plugin</developerConnection>
+		<connection>scm:git:git@github.com:yargo13/Correct_Image.git</connection>
+		<developerConnection>scm:git:git@github.com:yargo13/Correct_Image.git</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/imagej/example-legacy-plugin</url>
+		<url>https://github.com/yargo13/Correct_Image.git</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
@@ -86,8 +83,8 @@
 	</ciManagement>
 
 	<properties>
-		<package-name>com.mycompany.imagej</package-name>
-		<main-class>com.mycompany.imagej.Correct_Ilumination</main-class>
+		<package-name>com.yargo.imagej</package-name>
+		<main-class>com.yargo.imagej.Correct_Ilumination</main-class>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>My Company, Inc.</license.copyrightOwners>
 	</properties>
@@ -113,16 +110,6 @@
 			<groupId>gov.nist.math</groupId>
 			<artifactId>jama</artifactId>
 			<version>1.0.3</version>
-		</dependency>
-		<dependency>
-			<groupId>edu.emory.mathcs</groupId>
-			<artifactId>parallel_colt</artifactId>
-			<version>0.7.2</version>
-		</dependency>
-		<dependency>
-			<groupId>edu.emory.mathcs</groupId>
-			<artifactId>parallel_iterative_deconvolution</artifactId>
-			<version>1.9</version>
 		</dependency>
 	</dependencies>
 </project>

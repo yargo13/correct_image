@@ -6,24 +6,14 @@
  *     http://creativecommons.org/publicdomain/zero/1.0/
  */
 
-package com.mycompany.imagej;
+package com.yargo.imagej;
 /* o seu caralho de merda funfa naversao nova AGORA 2*/
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
-import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
-
-/**
- * A template for processing each pixel of either
- * GRAY8, GRAY16, GRAY32 or COLOR_RGB images.
- *
- * @author Johannes Schindelin
- */
-import ij.*;
 import ij.process.*;
-import ij.plugin.filter.*;
 
 public class Correct_Ilumination implements PlugInFilter {
 	ImagePlus imp;

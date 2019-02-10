@@ -1,4 +1,4 @@
-package com.mycompany.imagej;
+package com.yargo.imagej;
 
 import Jama.Matrix;
 import edu.emory.mathcs.restoretools.Enums.OutputType;

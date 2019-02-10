@@ -1,13 +1,11 @@
-package com.mycompany.imagej;
+package com.yargo.imagej;
 
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
-import ij.io.FileSaver;
 
 import java.awt.*;
 import ij.plugin.filter.*;
-import ij.plugin.*;
 
 import java.awt.image.BufferedImage;
 import java.util.Hashtable;
