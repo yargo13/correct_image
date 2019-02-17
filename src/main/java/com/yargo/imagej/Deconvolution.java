@@ -6,7 +6,6 @@ import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDDoubleIterativeDeconvo
 import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDFloatIterativeDeconvolver2D;
 import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDOptions;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
-import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;

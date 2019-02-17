@@ -41,17 +41,6 @@ import mpicbg.models.PointMatch;
 
 import Jama.*;
 
-import edu.emory.mathcs.restoretools.Enums.OutputType;
-import edu.emory.mathcs.restoretools.Enums.PrecisionType;
-import edu.emory.mathcs.restoretools.iterative.IterativeEnums.BoundaryType;
-import edu.emory.mathcs.restoretools.iterative.IterativeEnums.PreconditionerType;
-import edu.emory.mathcs.restoretools.iterative.IterativeEnums.ResizingType;
-import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDDoubleIterativeDeconvolver2D;
-import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDFloatIterativeDeconvolver2D;
-import edu.emory.mathcs.restoretools.iterative.mrnsd.MRNSDOptions;
-import edu.emory.mathcs.utils.ConcurrencyUtils;
-
-
 public class Correct_Image implements PlugInFilter {
     ImagePlus imp;
     public static long startTime;
@@ -1123,7 +1112,7 @@ public class Correct_Image implements PlugInFilter {
                 ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 //impModelDeconv.show();
-                ImagePlus impDeconvolved = Deconvolution.deconvolveMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus impDeconvolved = Deconvolution.deconvolveColorMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 ipDeconvolved = impDeconvolved.getProcessor();
             }

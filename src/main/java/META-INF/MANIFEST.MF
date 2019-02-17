@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
-Main-Class: com.yargo.imagej.Correct_Image
+Class-Path: parallel_iterative_deconvolution-1.9.jar parallelcolt-0.7.2.jar
+Main-Class: com.yargo.imagej.Correct_Ilumination
 
