@@ -1081,9 +1081,8 @@ public class Correct_Image implements PlugInFilter {
         }
 
         else{
-            ImagePlus imPSF = new ImagePlus();
-
-            InputStream is = Correct_Ilumination.class.getResourceAsStream("/Modelo.tif");
+            ImagePlus imPSF;
+            InputStream is = getClass().getResourceAsStream("/Modelo.tif");
             Opener opener = new Opener();
             ImagePlus modelTIF = opener.openTiff(is, "Modelo");
             double[] resultsModel = {1,1,0};
