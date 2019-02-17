@@ -1,6 +1,7 @@
 package com.yargo.imagej;
 
 import ij.*;
+import ij.io.Opener;
 import ij.process.*;
 import ij.gui.*;
 
@@ -8,6 +9,7 @@ import java.awt.*;
 import ij.plugin.filter.*;
 
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.Hashtable;
 
 import com.google.zxing.BinaryBitmap;
@@ -542,150 +544,6 @@ public class Correct_Image implements PlugInFilter {
         return ipByte;
     }
 
-    public static ImagePlus deconvolveMRNSD(ImageProcessor blurredImage, String pathToPsf, String pathToDeblurredImage, String preconditionerStr, String preconditionerTolStr, String boundaryStr, String resizingStr, String outputStr, String precisionStr, String stoppingTolStr, String thresholdStr,
-                                            String logConvergenceStr, String maxItersStr, String nOfThreadsStr, String showIterationsStr) {
-        double stoppingTol;
-        double preconditionerTol;
-        boolean showIterations, logConvergence;
-        double threshold;
-        int maxIters;
-        int nOfThreads;
-        PreconditionerType preconditioner = null;
-        BoundaryType boundary = null;
-        ResizingType resizing = null;
-        OutputType output = null;
-        PrecisionType precision = null;
-        ImagePlus imX = null;
-        ImagePlus imB =  new ImagePlus("Blurred Model",blurredImage);
-        ImagePlus[][] imPSF = new ImagePlus[1][1];
-        imPSF[0][0] = IJ.openImage(pathToPsf);
-        int h = imB.getHeight();
-        int w = imB.getWidth();
-        ImageProcessor ipPSF = imPSF[0][0].getProcessor();
-        ipPSF = ipPSF.resize(w, h, false);
-        imPSF[0][0] = new ImagePlus("Blurred Model", ipPSF);
-        maxIters = Integer.parseInt(maxItersStr);
-        for (PreconditionerType elem : PreconditionerType.values()) {
-            if (elem.toString().equals(preconditionerStr)) {
-                preconditioner = elem;
-                break;
-            }
-        }
-        for (BoundaryType elem : BoundaryType.values()) {
-            if (elem.toString().equals(boundaryStr)) {
-                boundary = elem;
-                break;
-            }
-        }
-        for (ResizingType elem : ResizingType.values()) {
-            if (elem.toString().equals(resizingStr)) {
-                resizing = elem;
-                break;
-            }
-        }
-        for (OutputType elem : OutputType.values()) {
-            if (elem.toString().equals(outputStr)) {
-                output = elem;
-                break;
-            }
-        }
-        for (PrecisionType elem : PrecisionType.values()) {
-            if (elem.toString().equals(precisionStr)) {
-                precision = elem;
-                break;
-            }
-        }
-        preconditionerTol = Double.parseDouble(preconditionerTolStr);
-        stoppingTol = Double.parseDouble(stoppingTolStr);
-        threshold = Double.parseDouble(thresholdStr);
-        logConvergence = Boolean.parseBoolean(logConvergenceStr);
-        nOfThreads = Integer.parseInt(nOfThreadsStr);
-        showIterations = Boolean.parseBoolean(showIterationsStr);
-        ConcurrencyUtils.setNumberOfThreads(nOfThreads);
-        MRNSDOptions options = new MRNSDOptions((stoppingTol == -1) ? true : false, stoppingTol, (threshold == -1) ? false : true, threshold, logConvergence);
-        switch (precision) {
-            case DOUBLE:
-                MRNSDDoubleIterativeDeconvolver2D dmrnsd = new MRNSDDoubleIterativeDeconvolver2D(imB, imPSF, preconditioner, preconditionerTol, boundary, resizing, output, maxIters, showIterations, options);
-                imX = dmrnsd.deconvolve();
-                break;
-            case SINGLE:
-                MRNSDFloatIterativeDeconvolver2D fmrnsd = new MRNSDFloatIterativeDeconvolver2D(imB, imPSF, preconditioner, (float) preconditionerTol, boundary, resizing, output, maxIters, showIterations, options);
-                imX = fmrnsd.deconvolve();
-                break;
-        }
-
-        //IJ.save(imX, pathToDeblurredImage);
-        //imX.show();
-        return imX;
-    }
-
-    public static ImagePlus deconvolveMRNSD(ImageProcessor ipB, ImagePlus PSF, String pathToDeblurredImage, String preconditionerStr, String preconditionerTolStr, String boundaryStr, String resizingStr, String outputStr, String precisionStr, String stoppingTolStr, String thresholdStr,
-                                            String logConvergenceStr, String maxItersStr, String nOfThreadsStr, String showIterationsStr) {
-        double stoppingTol;
-        double preconditionerTol;
-        boolean showIterations, logConvergence;
-        double threshold;
-        int maxIters;
-        int nOfThreads;
-        PreconditionerType preconditioner = null;
-        BoundaryType boundary = null;
-        ResizingType resizing = null;
-        OutputType output = null;
-        ColorProcessor ipColor = ipB.convertToColorProcessor();
-        ImagePlus[][] imPSF = new ImagePlus[1][1];
-        imPSF[0][0] = PSF;
-        maxIters = Integer.parseInt(maxItersStr);
-        for (PreconditionerType elem : PreconditionerType.values()) {
-            if (elem.toString().equals(preconditionerStr)) {
-                preconditioner = elem;
-                break;
-            }
-        }
-        for (BoundaryType elem : BoundaryType.values()) {
-            if (elem.toString().equals(boundaryStr)) {
-                boundary = elem;
-                break;
-            }
-        }
-        for (ResizingType elem : ResizingType.values()) {
-            if (elem.toString().equals(resizingStr)) {
-                resizing = elem;
-                break;
-            }
-        }
-        for (OutputType elem : OutputType.values()) {
-            if (elem.toString().equals(outputStr)) {
-                output = elem;
-                break;
-            }
-        }
-        preconditionerTol = Double.parseDouble(preconditionerTolStr);
-        stoppingTol = Double.parseDouble(stoppingTolStr);
-        threshold = Double.parseDouble(thresholdStr);
-        logConvergence = Boolean.parseBoolean(logConvergenceStr);
-        nOfThreads = Integer.parseInt(nOfThreadsStr);
-        showIterations = Boolean.parseBoolean(showIterationsStr);
-        ConcurrencyUtils.setNumberOfThreads(nOfThreads);
-        MRNSDOptions options = new MRNSDOptions((stoppingTol == -1) ? true : false, stoppingTol, (threshold == -1) ? false : true, threshold, logConvergence);
-        ByteProcessor[] channelsByte = {new ByteProcessor(ipColor.getWidth(), ipColor.getHeight()), new ByteProcessor(ipColor.getWidth(), ipColor.getHeight()), new ByteProcessor(ipColor.getWidth(), ipColor.getHeight())};
-        ImagePlus[] impChannels = new ImagePlus[3];
-        ImagePlus[] impDeblurred = new ImagePlus[3];
-        for(int i=0; i<3;i++){
-            ipColor.getChannel(i+1, channelsByte[i]);
-            impChannels[i] = new ImagePlus(" "+i,channelsByte[i]);
-            MRNSDDoubleIterativeDeconvolver2D dmrnsd = new MRNSDDoubleIterativeDeconvolver2D(impChannels[i], imPSF, preconditioner, preconditionerTol, boundary, resizing, output, maxIters, showIterations, options);
-            impDeblurred[i] = dmrnsd.deconvolve();
-        }
-        //IJ.save(imX, pathToDeblurredImage);
-        ColorProcessor ipColorDeblurred = (ColorProcessor)ipColor.duplicate();
-        for(int i=0;i<3;i++){
-            ipColorDeblurred.setChannel(i+1, impDeblurred[i].getProcessor().convertToByteProcessor());
-        }
-        ImagePlus impColorDeblurred = new ImagePlus("Image Deblurred", ipColorDeblurred);
-        //impColorDeblurred.show();
-        //IJ.save(imX, pathToDeblurredImage);
-        return impColorDeblurred;
-    }
 
     public static ImagePlus extractPSF(ImagePlus imX){
         ImageProcessor ipPSF = imX.getChannelProcessor();
@@ -1000,7 +858,9 @@ public class Correct_Image implements PlugInFilter {
         double[] modelArrayNorm = new double[(w-4)*(h-4)];
         double[] baseArrayNorm = new double[(w-4)*(h-4)];
 
-        ImagePlus imBase = IJ.openImage("C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo4.tif");
+        InputStream is = Correct_Ilumination.class.getResourceAsStream("/Modelo.tif");
+        Opener opener = new Opener();
+        ImagePlus imBase = opener.openTiff(is, "Modelo");
         ImageProcessor ipBase = imBase.getProcessor();
         ipBase = ipBase.resize(w, h, false);
         double min = 255, max = 0, prodIntern=0, normModel=0, normBase=0,
@@ -1222,6 +1082,10 @@ public class Correct_Image implements PlugInFilter {
 
         else{
             ImagePlus imPSF = new ImagePlus();
+
+            InputStream is = Correct_Ilumination.class.getResourceAsStream("/Modelo.tif");
+            Opener opener = new Opener();
+            ImagePlus modelTIF = opener.openTiff(is, "Modelo");
             double[] resultsModel = {1,1,0};
             double[] resultsTemp = new double[3];
             int i=0, sequence=0, iterationsFinal=0;
@@ -1230,10 +1094,10 @@ public class Correct_Image implements PlugInFilter {
                 i = 0;
             }
             while(i<100){
-                ImagePlus imX1 = deconvolveMRNSD(model1, "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo4.tif",  "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo1-Unblur.jpg", "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", Integer.toString(i), "4", "false");
                 imPSF = extractPSF(imX1);
-                ImagePlus impModelDeconv = deconvolveMRNSD(model1, imPSF, "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo10.tif", "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 ImageProcessor ipModel = impModelDeconv.getChannelProcessor();
                 ipModel = ipModel.convertToByte(false);
@@ -1254,13 +1118,13 @@ public class Correct_Image implements PlugInFilter {
                 i++;
             }
             if(iterationsFinal > 0){
-                ImagePlus imX1 = deconvolveMRNSD(model1, "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo4.tif",  "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo1-Unblur.jpg", "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF,"NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", Integer.toString(iterationsFinal), "4", "false");
                 imPSF = extractPSF(imX1);
-                ImagePlus impModelDeconv = deconvolveMRNSD(model1, imPSF, "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo10.tif", "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 //impModelDeconv.show();
-                ImagePlus impDeconvolved = deconvolveMRNSD(ipPerspective, imPSF, "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Padroes\\Modelo10.tif", "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                ImagePlus impDeconvolved = Deconvolution.deconvolveMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 ipDeconvolved = impDeconvolved.getProcessor();
             }
