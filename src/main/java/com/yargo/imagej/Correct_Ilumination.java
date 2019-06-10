@@ -16,6 +16,8 @@ import ij.process.ImageProcessor;
 import ij.process.*;
 import ij.io.Opener;
 
+import java.awt.*;
+
 public class Correct_Ilumination implements PlugInFilter {
 	ImagePlus imp;
 
@@ -38,8 +40,8 @@ public class Correct_Ilumination implements PlugInFilter {
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
 				value = ip.get(x, y);
-				Correct_Image.extractRGB(value, RGBTemp);
-				LABTemp = Correct_Image.convertRGBtoLAB(RGBTemp);
+				ColorTools.extractRGB(value, RGBTemp);
+				LABTemp = ColorTools.convertRGBtoLAB(RGBTemp);
 				LFloat.setf(x, y, (float) LABTemp[0]);
 				aFloat.setf(x, y, (float) LABTemp[1]);
 				bFloat.setf(x, y, (float) LABTemp[2]);
@@ -71,7 +73,7 @@ public class Correct_Ilumination implements PlugInFilter {
 				LABTemp[0] = LFloat.getf(x, y) * sumBefore / sumAfter;
 				LABTemp[1] = aFloat.getf(x, y);
 				LABTemp[2] = bFloat.getf(x, y);
-				ipFinal.putPixel(x, y, Correct_Image.convertLABtoRGB(LABTemp));
+				ipFinal.putPixel(x, y, ColorTools.convertLABtoRGB(LABTemp));
 			}
 		}
 

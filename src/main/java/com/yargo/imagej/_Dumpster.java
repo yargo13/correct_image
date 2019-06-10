@@ -182,7 +182,7 @@ public class _Dumpster implements PlugInFilter {
         for(int i=0;i<w;i++){
             for(int j=0;j<h;j++){
                 v = ip.get(i, j);
-                Correct_Image.extractRGB(v, tempRGB);
+                ColorTools.extractRGB(v, tempRGB);
                 calculatePixelAfterCorrectionThin(correction,averageValues,tempRGB,finalRGB);
                 thin.putPixel(i, j, finalRGB);
             }
@@ -326,7 +326,7 @@ public class _Dumpster implements PlugInFilter {
         for(int i=0;i<w;i++){
             for(int j=0;j<h;j++){
                 v = ip.get(i, j);
-                Correct_Image.extractRGB(v, tempRGB);
+                ColorTools.extractRGB(v, tempRGB);
                 //tempLAB = convertRGBtoLAB(tempRGB);
                 for(int k=0;k<3;k++){
                     multiplier = 255;
