@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
 import java.util.Hashtable;
 
 public class QRDecoder {
-    public static String decode(ImageProcessor ip){
+    public static String decode(ImageProcessor ip) {
         //https://elliottslaughter.com/2011/07/qr-decoder-imagej/
         BufferedImage myimg = ip.convertToByte(false).getBufferedImage();
         Reader reader = new QRCodeReader();
@@ -22,7 +22,8 @@ public class QRDecoder {
             hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
             Result result = reader.decode(bitmap, hints);
             resultText = result.getText();
-        } catch (NotFoundException e) { return "Nao Encontrado";
+        } catch (NotFoundException e) {
+            return "Nao Encontrado";
         } catch (ChecksumException e) {
         } catch (FormatException e) {
         }

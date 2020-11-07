@@ -24,7 +24,7 @@ public class Average_LAB implements PlugInFilter {
         double[] tempRGB = new double[3];
         double[] tempLAB;
         double[] sumLAB = {0, 0, 0};
-        for (Point point: points){
+        for (Point point : points) {
             v = ip.get(point.x, point.y);
             ColorTools.extractRGB(v, tempRGB);
             tempLAB = ColorTools.convertRGBtoLAB(tempRGB);
@@ -33,9 +33,9 @@ public class Average_LAB implements PlugInFilter {
             sumLAB[2] += tempLAB[2];
         }
         double n = points.length;
-        sumLAB[0]/=n;
-        sumLAB[1]/=n;
-        sumLAB[2]/=n;
-        IJ.log("Média LAB\n"+sumLAB[0]+"\t"+sumLAB[1]+"\t"+sumLAB[2]);
+        sumLAB[0] /= n;
+        sumLAB[1] /= n;
+        sumLAB[2] /= n;
+        IJ.log("Média LAB\n" + sumLAB[0] + "\t" + sumLAB[1] + "\t" + sumLAB[2]);
     }
 }

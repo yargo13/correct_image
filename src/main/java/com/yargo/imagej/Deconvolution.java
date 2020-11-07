@@ -27,7 +27,7 @@ public class Deconvolution {
         Enums.OutputType output = null;
         Enums.PrecisionType precision = null;
         ImagePlus imX = null;
-        ImagePlus imB =  new ImagePlus("Blurred Model",blurredImage);
+        ImagePlus imB = new ImagePlus("Blurred Model", blurredImage);
         ImagePlus[][] imPSF = new ImagePlus[1][1];
         imPSF[0][0] = PSF;
         int h = imB.getHeight();
@@ -91,7 +91,7 @@ public class Deconvolution {
     }
 
     public static ImagePlus deconvolveColorMRNSD(ImageProcessor ipB, ImagePlus PSF, String preconditionerStr, String preconditionerTolStr, String boundaryStr, String resizingStr, String outputStr, String precisionStr, String stoppingTolStr, String thresholdStr,
-                                            String logConvergenceStr, String maxItersStr, String nOfThreadsStr, String showIterationsStr) {
+                                                 String logConvergenceStr, String maxItersStr, String nOfThreadsStr, String showIterationsStr) {
         double stoppingTol;
         double preconditionerTol;
         boolean showIterations, logConvergence;
@@ -141,16 +141,16 @@ public class Deconvolution {
         ByteProcessor[] channelsByte = {new ByteProcessor(ipColor.getWidth(), ipColor.getHeight()), new ByteProcessor(ipColor.getWidth(), ipColor.getHeight()), new ByteProcessor(ipColor.getWidth(), ipColor.getHeight())};
         ImagePlus[] impChannels = new ImagePlus[3];
         ImagePlus[] impDeblurred = new ImagePlus[3];
-        for(int i=0; i<3;i++){
-            ipColor.getChannel(i+1, channelsByte[i]);
-            impChannels[i] = new ImagePlus(" "+i,channelsByte[i]);
+        for (int i = 0; i < 3; i++) {
+            ipColor.getChannel(i + 1, channelsByte[i]);
+            impChannels[i] = new ImagePlus(" " + i, channelsByte[i]);
             MRNSDDoubleIterativeDeconvolver2D dmrnsd = new MRNSDDoubleIterativeDeconvolver2D(impChannels[i], imPSF, preconditioner, preconditionerTol, boundary, resizing, output, maxIters, showIterations, options);
             impDeblurred[i] = dmrnsd.deconvolve();
         }
         //IJ.save(imX, pathToDeblurredImage);
-        ColorProcessor ipColorDeblurred = (ColorProcessor)ipColor.duplicate();
-        for(int i=0;i<3;i++){
-            ipColorDeblurred.setChannel(i+1, impDeblurred[i].getProcessor().convertToByteProcessor());
+        ColorProcessor ipColorDeblurred = (ColorProcessor) ipColor.duplicate();
+        for (int i = 0; i < 3; i++) {
+            ipColorDeblurred.setChannel(i + 1, impDeblurred[i].getProcessor().convertToByteProcessor());
         }
         ImagePlus impColorDeblurred = new ImagePlus("Image Deblurred", ipColorDeblurred);
         //impColorDeblurred.show();
