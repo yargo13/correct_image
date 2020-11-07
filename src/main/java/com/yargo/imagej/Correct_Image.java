@@ -34,6 +34,7 @@ public class Correct_Image implements PlugInFilter {
     static int minorSide = 1;
     static int numberOfPatches = 16;
     static boolean superior = true;
+    static boolean shouldClearModel = false;
     static HashMap<String, double[][]> tableValuesRGB = new HashMap<String, double[][]>() {
         {
             double[][] aRGB = {{137, 108, 102}, {147, 109, 98}, {166, 142, 123}, {185, 158, 156},
@@ -106,22 +107,21 @@ public class Correct_Image implements PlugInFilter {
         int c0 = roi.x;
         int hROI = roi.height;
         int wROI = roi.width;
-        ImageProcessor improc = ip.convertToByte(true);
-        ImageProcessor ip2 = improc.duplicate();
-        int h = ip2.getHeight();
-        int w = ip2.getWidth();
-        int v, u;
-        improc.findEdges();
-        improc.medianFilter(); //Filtro da mediana retira parte do ruido de "bordas" virtuais
+        ImageProcessor ipByte = ip.convertToByte(true);
+        int h = ipByte.getHeight();
+        int w = ipByte.getWidth();
+        int v;
+        ipByte.findEdges();
+        ipByte.medianFilter(); //Filtro da mediana retira parte do ruido de "bordas" virtuais
         if (irregular == 3) {
-            int threshold = improc.getAutoThreshold();
+            int threshold = ipByte.getAutoThreshold();
             IJ.log("" + (int) (0.65 * threshold));
-            improc.threshold((int) (0.65 * threshold));
+            ipByte.threshold((int) (0.65 * threshold));
         } else {
-            improc.autoThreshold();
+            ipByte.autoThreshold();
         }
-        improc.medianFilter();
-        ImagePlus impa = new ImagePlus("Teste", improc); //Imagem das bordas, para verificacao de problemas
+        ipByte.medianFilter();
+        ImagePlus impa = new ImagePlus("Teste", ipByte); //Imagem das bordas, para verificacao de problemas
         //impa.show();
         ParticleAnalyzer pAnalyzer = new ParticleAnalyzer(36, 0, null, 50, Double.POSITIVE_INFINITY, 0, 0.6);
         pAnalyzer.setHideOutputImage(true);
@@ -138,7 +138,6 @@ public class Correct_Image implements PlugInFilter {
         for (int j = r0 + 1; j < r0 + hROI; j++) {
             for (int i = c0 + 1; i < c0 + wROI; i++) {
                 v = ipParticles.get(i, j);
-                u = ip2.get(i, j);
                 if (v == 0 && (polygonfinal == null || !polygonfinal.contains(i, j))) {
                     wand.autoOutline(i, j);
                     polygonfinal = new Polygon(wand.xpoints, wand.ypoints, wand.npoints);
@@ -274,7 +273,7 @@ public class Correct_Image implements PlugInFilter {
             ynew[0] = ynew[2] + minorSide;
             ynew[1] = ynew[2];
             ynew[3] = ynew[2] + minorSide;
-        } else if (position == 3) {
+        } else {
             xnew[0] = xnew[3];
             xnew[1] = xnew[3] + majorSide;
             xnew[2] = xnew[3] + majorSide;
@@ -557,17 +556,14 @@ public class Correct_Image implements PlugInFilter {
         }
         double[] modelArray = new double[(w - 4) * (h - 4)];
         double[] baseArray = new double[(w - 4) * (h - 4)];
-        double[] modelArrayNorm = new double[(w - 4) * (h - 4)];
-        double[] baseArrayNorm = new double[(w - 4) * (h - 4)];
 
         InputStream is = Correct_Illumination.class.getResourceAsStream("/Modelo.tif");
         Opener opener = new Opener();
         ImagePlus imBase = opener.openTiff(is, "Modelo");
         ImageProcessor ipBase = imBase.getProcessor();
         ipBase = ipBase.resize(w, h, false);
-        double min = 255, max = 0, prodIntern = 0, normModel = 0, normBase = 0,
+        double min = 255, max = 0,
                 difQuad = 0, avgModel = 0, avgBase = 0,
-                sumDifferences = 0, sumAbsDifferences = 0,
                 countThreshold = 0, sumSquares = 0;
 
         //Threshold de 10% para classificacao correta da cor
@@ -583,17 +579,14 @@ public class Correct_Image implements PlugInFilter {
         w = w - 4;
         h = h - 4; //troca valores para facilitar calculos
 
-        for (int i = 0; i < modelArray.length; i++) {
-            if (modelArray[i] > max) max = modelArray[i];
-            if (modelArray[i] < min) min = modelArray[i];
+        for (double v : modelArray) {
+            if (v > max) max = v;
+            if (v < min) min = v;
         }
         for (int i = 0; i < modelArray.length; i++) {
             modelArray[i] = (modelArray[i] - min) / (max - min);
             avgModel += modelArray[i];
             avgBase += baseArray[i];
-            prodIntern += modelArray[i] * baseArray[i];
-            normModel += modelArray[i] * modelArray[i];
-            normBase += baseArray[i] * baseArray[i];
             difQuad += (baseArray[i] - modelArray[i]) * (baseArray[i] - modelArray[i]);
             sumSquares += (baseArray[i] * baseArray[i]);
             if (Math.abs(baseArray[i] - modelArray[i]) > threshold) countThreshold += 1;
@@ -624,27 +617,32 @@ public class Correct_Image implements PlugInFilter {
 
 
         double minQ = 1, maxQ = 0, ssimSmall, sumSsimSmall = 0;
+        int smallHeight = h / 10;
+        int smallWidth = w / 10;
+        int numberPixelsSmall = smallHeight * smallWidth;
         for (int lin = 0; lin < 10; lin++) {
             for (int col = 0; col < 10; col++) {
-                double sumSmallModel = 0, sumSmallBase = 0, avgSmallModel = 0, avgSmallBase = 0, covarSmall = 0, varSmallModel = 0, varSmallBase = 0;
-                for (int i = 0; i < w / 10; i++) {
-                    for (int j = 0; j < h / 10; j++) {
-                        sumSmallModel += modelArray[w * (h / 10 * lin + j) + (i + w / 10 * col)]; //indice do elemento da submatriz (lin, col)
-                        sumSmallBase += baseArray[w * (h / 10 * lin + j) + (i + w / 10 * col)];
+                double sumSmallModel = 0, sumSmallBase = 0, avgSmallModel, avgSmallBase, covarSmall = 0, varSmallModel = 0, varSmallBase = 0;
+                for (int i = 0; i < smallWidth; i++) {
+                    for (int j = 0; j < smallHeight; j++) {
+                        int elementIndex = w * (smallHeight * lin + j) + (i + smallWidth * col);
+                        sumSmallModel += modelArray[elementIndex]; //indice do elemento da submatriz (lin, col)
+                        sumSmallBase += baseArray[elementIndex];
                     }
                 }
-                avgSmallModel = sumSmallModel / (h / 10 * w / 10);
-                avgSmallBase = sumSmallBase / (h / 10 * w / 10);
-                for (int i = 0; i < w / 10; i++) {
-                    for (int j = 0; j < h / 10; j++) {
-                        covarSmall += (modelArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallModel) * (baseArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallBase);
-                        varSmallModel += (modelArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallModel) * (modelArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallModel);
-                        varSmallBase += (baseArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallBase) * (baseArray[w * (h / 10 * lin + j) + (i + w / 10 * col)] - avgSmallBase);
+                avgSmallModel = sumSmallModel / numberPixelsSmall;
+                avgSmallBase = sumSmallBase / numberPixelsSmall;
+                for (int i = 0; i < smallWidth; i++) {
+                    for (int j = 0; j < smallHeight; j++) {
+                        int elementIndex = w * (smallHeight * lin + j) + (i + smallWidth * col);
+                        covarSmall += (modelArray[elementIndex] - avgSmallModel) * (baseArray[elementIndex] - avgSmallBase);
+                        varSmallModel += (modelArray[elementIndex] - avgSmallModel) * (modelArray[elementIndex] - avgSmallModel);
+                        varSmallBase += (baseArray[elementIndex] - avgSmallBase) * (baseArray[elementIndex] - avgSmallBase);
                     }
                 }
-                covarSmall = covarSmall / (h / 10 * w / 10);
-                varSmallModel = varSmallModel / (h / 10 * w / 10);
-                varSmallBase = varSmallBase / (h / 10 * w / 10);
+                covarSmall = covarSmall / numberPixelsSmall;
+                varSmallModel = varSmallModel / numberPixelsSmall;
+                varSmallBase = varSmallBase / numberPixelsSmall;
                 ssimSmall = (2 * avgSmallModel * avgSmallBase + c) * (2 * covarSmall + c) / ((avgSmallModel * avgSmallModel + avgSmallBase * avgSmallBase + c) * (varSmallModel + varSmallBase + c));
                 sumSsimSmall += ssimSmall;
                 if (ssimSmall > maxQ) maxQ = ssimSmall;
@@ -684,7 +682,6 @@ public class Correct_Image implements PlugInFilter {
             }
         }
 
-
         Rectangle r = new Rectangle(minX, minY, (maxX - minX), (maxY - minY));
         ip.setRoi(r);
         ip = ip.crop();
@@ -720,8 +717,8 @@ public class Correct_Image implements PlugInFilter {
 
         GenericDialog dialog = new GenericDialog("Selecionar Calibração");
         String[] algorithmOptions = {"Plane", "DID"};
-        dialog.addChoice("TableRGB - Calcular Correção", tableValuesRGB.keySet().toArray(new String[tableValuesRGB.keySet().size()]), "Ideal");
-        dialog.addChoice("TableLAB - Calcular Erro", tableValuesLAB.keySet().toArray(new String[tableValuesLAB.keySet().size()]), "Ideal");
+        dialog.addChoice("TableRGB - Calcular Correção", tableValuesRGB.keySet().toArray(new String[0]), "Ideal");
+        dialog.addChoice("TableLAB - Calcular Erro", tableValuesLAB.keySet().toArray(new String[0]), "Ideal");
         dialog.addChoice("Correção", algorithmOptions, "Plane");
         dialog.showDialog();
         if (dialog.wasCanceled()) return;
@@ -740,7 +737,6 @@ public class Correct_Image implements PlugInFilter {
             if (irregular == 1) ip.rotate(-12.5);
             else ip.rotate(12.5);
             polygon = findCard(ip, 0);
-            irregular = 0;
         }
 
         irregular = findIrregularRectangle(polygon);
@@ -827,9 +823,6 @@ public class Correct_Image implements PlugInFilter {
                 ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", Integer.toString(iterationsFinal), "4", "false");
                 imPSF = extractPSF(imX1);
-                ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
-                        "false", "1", "4", "false");
-                //impModelDeconv.show();
                 ImagePlus impDeconvolved = Deconvolution.deconvolveColorMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                         "false", "1", "4", "false");
                 ipDeconvolved = impDeconvolved.getProcessor();
@@ -863,31 +856,25 @@ public class Correct_Image implements PlugInFilter {
         PointRoi pr = new PointRoi(xp, yp, 25);
         impPerspective.setRoi(pr);
 
-        ImagePlus impPlane = null;
+        ImagePlus impCorrected;
         if (meanDifference > 55) {
             IJ.log("Tabela de cores nao localizada");
         } else {
             double[][] averageRGBDeconvolved = averageRGB(ipDeconvolved, newPoints);
-            double[][] averageLABDeconvolved = ColorTools.convertRGBtoLAB(averageRGBDeconvolved);
 
-            ImageProcessor ipPlane;
-            if (algorithmChoice == "Plane") {
+            ImageProcessor ipCorrected;
+            if (algorithmChoice.equals("Plane")) {
                 double[][] correctionPlane = ColorCorrection.calculateCorrectionPlane(averageRGBDeconvolved, tableRGB);
-                ipPlane = ColorCorrection.applyCorrectionPlane(correctionPlane, ipDeconvolved);
+                ipCorrected = ColorCorrection.applyCorrectionPlane(correctionPlane, ipDeconvolved);
             } else {
-                //double[][] correctionDID = _Dumpster.calculateCorrectionDID(averageRGBDeconvolved, tableRGB);
-                //ipPlane = _Dumpster.applyCorrectionDID(correctionDID, ipDeconvolved);
                 double[][] correctionThin = ColorCorrection.calculateCorrectionThin(averageRGBDeconvolved, tableRGB);
-                ipPlane = ColorCorrection.applyCorrectionThin(correctionThin, averageRGBDeconvolved, ipDeconvolved);
+                ipCorrected = ColorCorrection.applyCorrectionThin(correctionThin, averageRGBDeconvolved, ipDeconvolved);
             }
-            //
-            //double[][] correctionPlane = calculateCorrectionPlane(averageLABDeconvolved, tableValuesLAB);
-            //ImageProcessor ipPlane = applyCorrectionPlaneLAB(correctionPlane,ipDeconvolved);
 
-            impPlane = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipPlane);
-            impPlane.show();
+            impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipCorrected);
+            impCorrected.show();
 
-            double[][] averageRGBPlane = averageRGB(ipPlane, newPoints);
+            double[][] averageRGBPlane = averageRGB(ipCorrected, newPoints);
             double[][] averageLABPlane = ColorTools.convertRGBtoLAB(averageRGBPlane);
             double meanDifferencePlane = meanColorDifference(averageLABPlane, tableLAB);
 
@@ -895,9 +882,9 @@ public class Correct_Image implements PlugInFilter {
             IJ.log("Mean Difference Depois Plano: " + meanDifferencePlane);
             printStdErrorMinMax(meanDifferencePlane, averageLABPlane, tableLAB);
 
-            ImageProcessor model1new = findModel(ipPlane, newPoints, 1);
+            ImageProcessor model1new = findModel(ipCorrected, newPoints, 1);
             ImageProcessor model2old = findModel(ipPerspective, newPoints, 2);
-            ImageProcessor model2new = findModel(ipPlane, newPoints, 2);
+            ImageProcessor model2new = findModel(ipCorrected, newPoints, 2);
 
             double[] resultsAnt1 = new double[3];
             double[] resultsDep1 = new double[3];
@@ -908,12 +895,14 @@ public class Correct_Image implements PlugInFilter {
             analyzeModel(model2old, resultsAnt2, true);
             analyzeModel(model2new, resultsDep2, true);
 
-            String resultText2 = QRDecoder.decode(ipPlane);
+            String resultText2 = QRDecoder.decode(ipCorrected);
             IJ.log(resultText2);
-            calibrateImage(impPlane);
+            calibrateImage(impCorrected);
 
-            //impPerspective = clearModel(impPerspective, ipPerspective, newPoints);
-            //impPlane = clearModel(impPlane, ipPlane, newPoints);
+            if (shouldClearModel) {
+                impPerspective = clearModel(impPerspective, ipPerspective, newPoints);
+                clearModel(impCorrected, ipCorrected, newPoints);
+            }
         }
 
         calibrateImage(impPerspective);
@@ -924,7 +913,7 @@ public class Correct_Image implements PlugInFilter {
 
 
         //IJ.saveAs(impPerspective, "png", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Perspectiva\\"+impPerspective.getTitle());
-        //IJ.saveAs(impPlane, "png", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Corrigida\\"+impPlane.getTitle());
+        //IJ.saveAs(impCorrected, "png", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Corrigida\\"+impCorrected.getTitle());
 
     }
 }
