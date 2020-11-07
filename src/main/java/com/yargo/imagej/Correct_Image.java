@@ -8,50 +8,23 @@ import ij.gui.*;
 import java.awt.*;
 import ij.plugin.filter.*;
 
-import java.awt.image.BufferedImage;
 import java.io.InputStream;
-import java.util.Hashtable;
 
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.ChecksumException;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.FormatException;
-import com.google.zxing.LuminanceSource;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.Reader;
-import com.google.zxing.Result;
-import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.qrcode.QRCodeReader;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-
-import mpicbg.ij.InverseTransformMapping;
-import mpicbg.ij.Mapping;
-import mpicbg.ij.util.Util;
-import mpicbg.models.HomographyModel2D;
-import mpicbg.models.IllDefinedDataPointsException;
-import mpicbg.models.InverseCoordinateTransform;
-import mpicbg.models.Model;
-import mpicbg.models.NotEnoughDataPointsException;
-import mpicbg.models.Point;
-import mpicbg.models.PointMatch;
 
 import Jama.*;
 
 public class Correct_Image implements PlugInFilter {
     ImagePlus imp;
     public static long startTime;
-    static double larguraBlackExt = 11.00;
-    static double larguraWhite = 10.70;
-    static double larguraBlackInt = 10.40;
-    static double largura = larguraWhite;
-    static double alturaBlackExt = 5.50;
-    static double alturaWhite = 5.20;
-    static double alturaBlackInt = 4.90;
-    static double altura = alturaWhite;
+    static double widthBlackExt = 11.00;
+    static double widthWhite = 10.70;
+    static double widthBlackInt = 10.40;
+    static double width = widthWhite;
+    static double heightBlackExt = 5.50;
+    static double heightWhite = 5.20;
+    static double heightBlackInt = 4.90;
+    static double height = heightWhite;
     static double sidePatch = 1.00;
     static double interDistance = 0.20;
     static int majorSide = 1;
@@ -108,24 +81,6 @@ public class Correct_Image implements PlugInFilter {
                 elapsedTime / 1000, elapsedTime % 1000));
     }
 
-    public static String QRDecoder(ImageProcessor ip){
-        //https://elliottslaughter.com/2011/07/qr-decoder-imagej/
-        BufferedImage myimg = ip.convertToByte(false).getBufferedImage();
-        Reader reader = new QRCodeReader();
-        LuminanceSource source = new BufferedImageLuminanceSource(myimg);
-        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-        String resultText = new String();
-        try {
-            Hashtable<DecodeHintType, Object> hints = new Hashtable<DecodeHintType, Object>();
-            hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
-            Result result = reader.decode(bitmap, hints);
-            resultText = result.getText();
-        } catch (NotFoundException e) { return "Nao Encontrado";
-        } catch (ChecksumException e) {
-        } catch (FormatException e) {
-        }
-        return resultText;
-    }
 
     public ImagePlus enlargeCanvas(ImagePlus imp, double angle) {
         imp.unlock();
@@ -229,7 +184,7 @@ public class Correct_Image implements PlugInFilter {
         return polygon;
     }
 
-    public static int findIrregularRetang(ImageProcessor ip, Polygon polygon){
+    public static int findIrregularRectangle(ImageProcessor ip, Polygon polygon){
         /*
          * Verifica diferencas entre pontos consecutivos do retangulo tanto em x como em y
          * Se a o modulo da variacao em uma das dimensoes for pequeno apos 3 pontos, assume-se que estao proximos
@@ -261,7 +216,7 @@ public class Correct_Image implements PlugInFilter {
     }
 
     public static Boolean checkOrientation(ImageProcessor ip, Polygon polygon){
-        Boolean turn=false;
+        boolean turn=false;
         Rectangle r = polygon.getBounds();
 
         if((r.getHeight()>r.getWidth() && ip.getHeight()>ip.getWidth()) || r.getHeight()>1.4*r.getWidth()) turn=true;
@@ -333,77 +288,31 @@ public class Correct_Image implements PlugInFilter {
 
     }
 
-    public static ImagePlus transformPerspective(ImagePlus source, PointRoi newPoints){
-        /**
-         * Use two sets of {@link PointRoi landmarks} selected in two images to map
-         * one image to the other.
-         *
-         * @author Stephan Saalfeld <saalfeld@mpi-cbg.de>
-         * @version 0.2b
-         */
-        final ArrayList< PointMatch > matches = new ArrayList< PointMatch >();
-        final ImagePlus target = source.createImagePlus();
-        final ImageProcessor ipSource = source.getProcessor();
-        final ImageProcessor ipTarget;
-
-        ipTarget = source.getProcessor().createProcessor( source.getWidth()*11/10, source.getHeight()*11/10 );
-
-        final List< Point > sourcePoints = Util.pointRoiToPoints( ( PointRoi )source.getRoi() );
-        final List< Point > templatePoints = Util.pointRoiToPoints(newPoints);
-        final int numMatches = Math.min( sourcePoints.size(), templatePoints.size() );
-        for ( int i = 0; i < numMatches; ++i )
-            matches.add( new PointMatch( sourcePoints.get( i ), templatePoints.get( i ) ) );
-        final Mapping< ? > mapping;
-        Model< ? > model;
-        InverseCoordinateTransform ict;
-        final HomographyModel2D h = new HomographyModel2D();
-        model = h;
-        ict = h;
-        try	{
-            model.fit( matches );
-        }
-        catch ( final NotEnoughDataPointsException e ){
-            IJ.showMessage( "Not enough landmarks selected to find a transformation model." );
-            return target;
-        }
-        catch ( final IllDefinedDataPointsException e )	{
-            IJ.showMessage( "The set of landmarks is ill-defined in terms of the desired transformation." );
-            return target;
-        }
-
-        mapping = new InverseTransformMapping< InverseCoordinateTransform >( ict );
-        ipSource.setInterpolationMethod( ImageProcessor.BILINEAR);
-        mapping.mapInterpolated( ipSource, ipTarget );
-        target.setProcessor(""+source.getShortTitle()+"_Perspectiva", ipTarget );
-
-        return target;
-    }
-
     public static void calibrateImage(ImagePlus imp){
         ij.measure.Calibration calibration = imp.getCalibration();
-        calibration.pixelWidth = largura/majorSide;
-        calibration.pixelHeight = altura/minorSide;
+        calibration.pixelWidth = width /majorSide;
+        calibration.pixelHeight = height /minorSide;
         calibration.setUnit("cm");
     }
 
     public static void checkSize(ImageProcessor ip, int[] xnew, int[] ynew, Rectangle r){
         ImageProcessor ipByte = ip.convertToByte(false);
         int v = ipByte.get((int)r.getMinX()+5, (int)r.getMinY()+5);
-        int u = ipByte.get((int)(r.getMinX()+r.getWidth()*0.20/(larguraBlackExt)+5), (int)(r.getMinY()+r.getHeight()*0.20/(larguraBlackExt)+5));
+        int u = ipByte.get((int)(r.getMinX()+r.getWidth()*0.20/(widthBlackExt)+5), (int)(r.getMinY()+r.getHeight()*0.20/(widthBlackExt)+5));
         IJ.log("U: "+u+" V: "+v);
         if((u<50 && u >= 2*v) || (u>=50 && u>1.1*v)){
-            largura = larguraBlackExt;
-            altura = alturaBlackExt;
+            width = widthBlackExt;
+            height = heightBlackExt;
             IJ.log("Black Ext");
         }
         else if((u<50 && u < 2*v && u>0.5*v) || (u>=50 && u>1.1*v && u<0.9*v)){
-            largura = larguraBlackInt;
-            altura = alturaBlackInt;
+            width = widthBlackInt;
+            height = heightBlackInt;
             IJ.log("Black Int");
         }
         else{
-            largura = larguraWhite;
-            altura = alturaWhite;
+            width = widthWhite;
+            height = heightWhite;
             IJ.log("White");
         }
 
@@ -420,12 +329,12 @@ public class Correct_Image implements PlugInFilter {
         //Identificar se cores estão na metade superior ou inferior através do patch em branco.
         double[] values = {0,0};
         for(int i=-1;i<2;i+=2){
-            x = r.getCenterX() - (3.0/2*sidePatch+3.0/2*interDistance)/largura*majorSide;
-            y = r.getCenterY() + i*(1.0/2*sidePatch+1.0/2*interDistance)/altura*minorSide;
+            x = r.getCenterX() - (3.0/2*sidePatch+3.0/2*interDistance)/ width *majorSide;
+            y = r.getCenterY() + i*(1.0/2*sidePatch+1.0/2*interDistance)/ height *minorSide;
             cont = 0;
             rgbSum[0] = 0; rgbSum[1] = 0; rgbSum[2] = 0;
-            for(int row=(int)(x-(sidePatch/4*majorSide/largura));row<(int)(x+(sidePatch/4*majorSide/largura));row++){
-                for(int col=(int)(y-(sidePatch/4*minorSide/altura));col<(int)(y+(sidePatch/4*minorSide/altura));col++){
+            for(int row = (int)(x-(sidePatch/4*majorSide/ width)); row<(int)(x+(sidePatch/4*majorSide/ width)); row++){
+                for(int col = (int)(y-(sidePatch/4*minorSide/ height)); col<(int)(y+(sidePatch/4*minorSide/ height)); col++){
                     value = ip.get(row, col);
                     ColorTools.extractRGB(value, rgbTemp);
                     rgbSum[0] += rgbTemp[0]; rgbSum[1] += rgbTemp[1]; rgbSum[2] += rgbTemp[2];
@@ -447,22 +356,22 @@ public class Correct_Image implements PlugInFilter {
         int x = 0,y = 0, width = 0, height = 0;
         switch(position){
             case 1:
-                xCenterSquare = (r.getCenterX() - (3*sidePatch + 3*interDistance)*r.getWidth()/largura);
-                if(superior) yCenterSquare = (r.getCenterY() + (sidePatch + interDistance)*r.getHeight()/altura);
-                else yCenterSquare = (r.getCenterY() - (sidePatch + interDistance)*r.getHeight()/altura);
-                x = (int)(xCenterSquare - (sidePatch+0.5*interDistance)*r.getWidth()/largura);
-                y = (int)(yCenterSquare - (sidePatch+0.5*interDistance)*r.getHeight()/altura);
-                width = (int)(1*(2*sidePatch+interDistance)*r.getWidth()/largura);
-                height = (int)(1*(2*sidePatch+interDistance)*r.getHeight()/altura);
+                xCenterSquare = (r.getCenterX() - (3*sidePatch + 3*interDistance)*r.getWidth()/ Correct_Image.width);
+                if(superior) yCenterSquare = (r.getCenterY() + (sidePatch + interDistance)*r.getHeight()/ Correct_Image.height);
+                else yCenterSquare = (r.getCenterY() - (sidePatch + interDistance)*r.getHeight()/ Correct_Image.height);
+                x = (int)(xCenterSquare - (sidePatch+0.5*interDistance)*r.getWidth()/ Correct_Image.width);
+                y = (int)(yCenterSquare - (sidePatch+0.5*interDistance)*r.getHeight()/ Correct_Image.height);
+                width = (int)(1*(2*sidePatch+interDistance)*r.getWidth()/ Correct_Image.width);
+                height = (int)(1*(2*sidePatch+interDistance)*r.getHeight()/ Correct_Image.height);
                 break;
             case 2:
-                xCenterSquare = (r.getCenterX() + (3*sidePatch + 3*interDistance)*r.getWidth()/largura);
-                if(superior) yCenterSquare = (r.getCenterY() + (sidePatch + interDistance)*r.getHeight()/altura);
-                else yCenterSquare = (r.getCenterY() - (sidePatch + interDistance)*r.getHeight()/altura);
-                x = (int)(xCenterSquare - (sidePatch+0.5*interDistance)*r.getWidth()/largura);
-                y = (int)(yCenterSquare - (sidePatch+0.5*interDistance)*r.getHeight()/altura);
-                width = (int)(1*(2*sidePatch+interDistance)*r.getWidth()/largura);
-                height = (int)(1*(2*sidePatch+interDistance)*r.getHeight()/altura);
+                xCenterSquare = (r.getCenterX() + (3*sidePatch + 3*interDistance)*r.getWidth()/ Correct_Image.width);
+                if(superior) yCenterSquare = (r.getCenterY() + (sidePatch + interDistance)*r.getHeight()/ Correct_Image.height);
+                else yCenterSquare = (r.getCenterY() - (sidePatch + interDistance)*r.getHeight()/ Correct_Image.height);
+                x = (int)(xCenterSquare - (sidePatch+0.5*interDistance)*r.getWidth()/ Correct_Image.width);
+                y = (int)(yCenterSquare - (sidePatch+0.5*interDistance)*r.getHeight()/ Correct_Image.height);
+                width = (int)(1*(2*sidePatch+interDistance)*r.getWidth()/ Correct_Image.width);
+                height = (int)(1*(2*sidePatch+interDistance)*r.getHeight()/ Correct_Image.height);
                 break;
         }
         Rectangle rSquare = new Rectangle(x, y, width, height);
@@ -562,13 +471,13 @@ public class Correct_Image implements PlugInFilter {
 
         for(int i=0;i<2;i++){
             for(int j=0;j<8;j++){
-                x = r.getCenterX() - (7.0/2*sidePatch+7.0/2*interDistance)/largura*majorSide + j*(sidePatch+interDistance)/largura*majorSide;
-                if(superior) y = r.getCenterY() - (3.0/2*sidePatch+3.0/2*interDistance)/altura*minorSide + i*(sidePatch+interDistance)/altura*minorSide;
-                else y = r.getCenterY() + (1.0/2*sidePatch+1.0/2*interDistance)/altura*minorSide + i*(sidePatch+interDistance)/altura*minorSide;
+                x = r.getCenterX() - (7.0/2*sidePatch+7.0/2*interDistance)/ width *majorSide + j*(sidePatch+interDistance)/ width *majorSide;
+                if(superior) y = r.getCenterY() - (3.0/2*sidePatch+3.0/2*interDistance)/ height *minorSide + i*(sidePatch+interDistance)/ height *minorSide;
+                else y = r.getCenterY() + (1.0/2*sidePatch+1.0/2*interDistance)/ height *minorSide + i*(sidePatch+interDistance)/ height *minorSide;
                 cont = 0;
                 rgbSum[0] = 0; rgbSum[1] = 0; rgbSum[2] = 0;
-                for(int row=(int)(x-(sidePatch/4*majorSide/largura));row<(int)(x+(sidePatch/4*majorSide/largura));row++){
-                    for(int col=(int)(y-(sidePatch/4*minorSide/altura));col<(int)(y+(sidePatch/4*minorSide/altura));col++){
+                for(int row = (int)(x-(sidePatch/4*majorSide/ width)); row<(int)(x+(sidePatch/4*majorSide/ width)); row++){
+                    for(int col = (int)(y-(sidePatch/4*minorSide/ height)); col<(int)(y+(sidePatch/4*minorSide/ height)); col++){
                         value = ip.get(row, col);
                         ColorTools.extractRGB(value, rgbTemp);
                         rgbSum[0] += rgbTemp[0]; rgbSum[1] += rgbTemp[1]; rgbSum[2] += rgbTemp[2];
@@ -876,7 +785,7 @@ public class Correct_Image implements PlugInFilter {
         IJ.log("\\Clear");
         IJ.log(""+imp.getTitle());
         tic();
-        String resultText = QRDecoder(ip);
+        String resultText = QRDecoder.decode(ip);
 
         GenericDialog dialog = new GenericDialog("Selecionar Calibração");
         String[] algorithmOptions = {"Plane","DID"};
@@ -891,7 +800,7 @@ public class Correct_Image implements PlugInFilter {
 
         ip.setBackgroundValue(0);
         Polygon polygon = findCard(ip, 0);
-        int irregular = findIrregularRetang(ip,polygon);
+        int irregular = findIrregularRectangle(ip,polygon);
 
         if(irregular != 0){
             imp = enlargeCanvas(imp, -12.5);
@@ -903,7 +812,7 @@ public class Correct_Image implements PlugInFilter {
             irregular = 0;
         }
 
-        irregular = findIrregularRetang(ip,polygon);
+        irregular = findIrregularRectangle(ip,polygon);
         if(irregular == 3){
             IJ.log("Tá Errado");
             polygon = findCard(ip, irregular);
@@ -926,7 +835,7 @@ public class Correct_Image implements PlugInFilter {
         getNewPoints(ip, polygon, xnew, ynew);
 
         PointRoi newPoints = new PointRoi(xnew, ynew, 4);
-        ImagePlus impPerspective = transformPerspective(imp, newPoints);
+        ImagePlus impPerspective = PerspectiveTransform.transform(imp, newPoints);
         //impPerspective.show();
 
         ImageProcessor ipPerspective = impPerspective.getChannelProcessor();
@@ -1012,9 +921,9 @@ public class Correct_Image implements PlugInFilter {
         int aux = 0;
         for(int i=0;i<2;i++){
             for(int j=0;j<8;j++){
-                x = r.getCenterX() - (7.0/2*sidePatch+7.0/2*interDistance)/largura*majorSide + j*(sidePatch+interDistance)/largura*majorSide;
-                if(superior) y = r.getCenterY() - (3.0/2*sidePatch+3.0/2*interDistance)/altura*minorSide + i*(sidePatch+interDistance)/altura*minorSide;
-                else y = r.getCenterY() + (1.0/2*sidePatch+1.0/2*interDistance)/altura*minorSide + i*(sidePatch+interDistance)/altura*minorSide;
+                x = r.getCenterX() - (7.0/2*sidePatch+7.0/2*interDistance)/ width *majorSide + j*(sidePatch+interDistance)/ width *majorSide;
+                if(superior) y = r.getCenterY() - (3.0/2*sidePatch+3.0/2*interDistance)/ height *minorSide + i*(sidePatch+interDistance)/ height *minorSide;
+                else y = r.getCenterY() + (1.0/2*sidePatch+1.0/2*interDistance)/ height *minorSide + i*(sidePatch+interDistance)/ height *minorSide;
                 xp[aux] = (int)x;
                 yp[aux] = (int)y;
                 aux++;
@@ -1073,7 +982,7 @@ public class Correct_Image implements PlugInFilter {
             analyzeModel(model2old, resultsAnt2, true);
             analyzeModel(model2new, resultsDep2, true);
 
-            String resultText2 = QRDecoder(ipPlane);
+            String resultText2 = QRDecoder.decode(ipPlane);
             IJ.log(resultText2);
             calibrateImage(impPlane);
 

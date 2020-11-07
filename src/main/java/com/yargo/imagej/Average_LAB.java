@@ -9,6 +9,7 @@ import ij.process.ImageProcessor;
 import java.awt.*;
 
 public class Average_LAB implements PlugInFilter {
+    /* Calculates the average LAB for a given ROI */
     ImagePlus imp;
 
     public int setup(String arg, ImagePlus imp) {
@@ -35,6 +36,6 @@ public class Average_LAB implements PlugInFilter {
         sumLAB[0]/=n;
         sumLAB[1]/=n;
         sumLAB[2]/=n;
-        IJ.log("Média LAB:"+sumLAB[0]+";"+sumLAB[1]+";"+sumLAB[2]);
+        IJ.log("Média LAB\n"+sumLAB[0]+"\t"+sumLAB[1]+"\t"+sumLAB[2]);
     }
 }

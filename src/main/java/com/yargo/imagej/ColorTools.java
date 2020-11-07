@@ -20,7 +20,6 @@ public class ColorTools {
     }
 
 
-
     public static double[] convertRGBtoLAB(double[] RGBValues){
         double[] LABValues = new double[3];
         double r, g, b;
