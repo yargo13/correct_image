@@ -1,19 +1,21 @@
 package com.yargo.imagej;
 
-import ij.*;
+import Jama.Matrix;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.Undo;
+import ij.gui.GenericDialog;
+import ij.gui.PointRoi;
+import ij.gui.Roi;
+import ij.gui.Wand;
 import ij.io.Opener;
-import ij.process.*;
-import ij.gui.*;
+import ij.plugin.filter.ParticleAnalyzer;
+import ij.plugin.filter.PlugInFilter;
+import ij.process.ImageProcessor;
 
 import java.awt.*;
-
-import ij.plugin.filter.*;
-
 import java.io.InputStream;
-
 import java.util.HashMap;
-
-import Jama.*;
 
 public class Correct_Image implements PlugInFilter {
     ImagePlus imp;

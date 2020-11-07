@@ -12,12 +12,10 @@ package com.yargo.imagej;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
-import ij.plugin.filter.PlugInFilter;
-import ij.process.ImageProcessor;
-import ij.process.*;
 import ij.io.Opener;
-
-import java.awt.*;
+import ij.plugin.filter.PlugInFilter;
+import ij.process.FloatProcessor;
+import ij.process.ImageProcessor;
 
 public class Correct_Illumination implements PlugInFilter {
     ImagePlus imp;
