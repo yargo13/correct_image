@@ -78,42 +78,6 @@ public class Correct_Illumination implements PlugInFilter {
 
         ImagePlus impFinal = new ImagePlus(imp.getShortTitle() + "_Iluminacao", ipFinal);
         impFinal.show();
-        /*
-    	FloatProcessor redFloat = ip.toFloat(0, null);
-    	FloatProcessor greenFloat = ip.toFloat(1, null);
-    	FloatProcessor blueFloat = ip.toFloat(2, null);
-
-    	FloatProcessor redBlurred = (FloatProcessor) redFloat.duplicate();
-    	FloatProcessor greenBlurred = (FloatProcessor) greenFloat.duplicate();
-    	FloatProcessor blueBlurred = (FloatProcessor) blueFloat.duplicate();
-
-    	int w = ip.getWidth();
-        int h = ip.getHeight();
-    	redBlurred.blurGaussian(Math.max(w/2,h/2));
-    	greenBlurred.blurGaussian(Math.max(w/2,h/2));
-    	blueBlurred.blurGaussian(Math.max(w/2,h/2));
-
-        for (int y=0; y<h; y++){
-            for (int x=0; x<w; x++){
-                redFloat.setf(x, y, redFloat.getf(x,y)/redBlurred.getf(x, y));
-                greenFloat.setf(x, y, greenFloat.getf(x,y)/greenBlurred.getf(x, y));
-                blueFloat.setf(x, y, blueFloat.getf(x,y)/blueBlurred.getf(x, y));
-            }
-        }
-
-        ImagePlus impRed = new ImagePlus("Teste (red)", redFloat);
-        ImagePlus impGreen = new ImagePlus("Teste (green)",greenFloat);
-        ImagePlus impBlue = new ImagePlus("Teste (blue)",blueFloat);
-
-        impRed.setDisplayRange(redFloat.getMin(), redFloat.getMin());
-        impGreen.setDisplayRange(greenFloat.getMin(), greenFloat.getMin());
-        impBlue.setDisplayRange(blueFloat.getMin(), blueFloat.getMin());
-
-        ImagePlus[] impChannels = {impRed, impGreen, impBlue};
-        ImagePlus impCorrected = RGBStackMerge.mergeChannels(impChannels, false).flatten();
-        impCorrected.setTitle(imp.getShortTitle()+"_Iluminacao");
-        impCorrected.show();
-		*/
     }
 
     /**
@@ -126,7 +90,7 @@ public class Correct_Illumination implements PlugInFilter {
      */
     public static void main(String[] args) {
         // set the plugins.dir property to make the plugin appear in the Plugins menu
-        Class<?> clazz = Correct_Image.class;
+        Class<?> clazz = Correct_Illumination.class;
         String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
         String pluginsDir = url.substring("file:".length(), url.length() - clazz.getName().length() - ".class".length());
         System.setProperty("plugins.dir", pluginsDir);

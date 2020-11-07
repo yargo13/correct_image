@@ -86,7 +86,7 @@ public class Correct_Image implements PlugInFilter {
     }
 
 
-    public ImagePlus enlargeCanvas(ImagePlus imp, double angle) {
+    public void enlargeCanvas(ImagePlus imp, double angle) {
         imp.unlock();
         if (imp.getStackSize() == 1)
             Undo.setup(Undo.COMPOUND_FILTER, imp);
@@ -97,7 +97,6 @@ public class Correct_Image implements PlugInFilter {
         if (r.width < imp.getWidth()) r.width = imp.getWidth();
         if (r.height < imp.getHeight()) r.height = imp.getHeight();
         IJ.run(imp, "Canvas Size...", "width=" + r.width + " height=" + r.height + " position=Center zero");
-        return imp;
     }
 
     public static Polygon findCard(ImageProcessor ip, int irregular) {
@@ -214,7 +213,7 @@ public class Correct_Image implements PlugInFilter {
         return 0;
     }
 
-    public static Boolean checkOrientation(ImageProcessor ip, Polygon polygon) {
+    public static boolean checkOrientation(ImageProcessor ip, Polygon polygon) {
         boolean turn = false;
         Rectangle r = polygon.getBounds();
 
@@ -726,44 +725,46 @@ public class Correct_Image implements PlugInFilter {
         double[][] tableLAB = tableValuesLAB.get(dialog.getNextChoice());
         String algorithmChoice = dialog.getNextChoice();
 
-        ip.setBackgroundValue(0);
-        Polygon polygon = findCard(ip, 0);
+        ImageProcessor preprocessedIp = ip.duplicate();
+        preprocessedIp.setBackgroundValue(0);
+        ImagePlus preprocessedImp = new ImagePlus("Preprocessed", preprocessedIp);
+        preprocessedImp.show();
+
+        Polygon polygon = findCard(preprocessedIp, 0);
         int irregular = findIrregularRectangle(polygon);
 
         if (irregular != 0) {
-            imp = enlargeCanvas(imp, -12.5);
-            ip = imp.getChannelProcessor();
-            ip.setBackgroundValue(0);
-            if (irregular == 1) ip.rotate(-12.5);
-            else ip.rotate(12.5);
-            polygon = findCard(ip, 0);
+            enlargeCanvas(preprocessedImp, -12.5);
+            preprocessedIp = preprocessedImp.getChannelProcessor();
+            preprocessedIp.setBackgroundValue(0);
+            if (irregular == 1) preprocessedIp.rotate(-12.5);
+            else preprocessedIp.rotate(12.5);
+            polygon = findCard(preprocessedIp, 0);
         }
 
         irregular = findIrregularRectangle(polygon);
         if (irregular == 3) {
-            IJ.log("Tá Errado");
-            polygon = findCard(ip, irregular);
+            polygon = findCard(preprocessedIp, irregular);
         }
 
 
-        Boolean turn = checkOrientation(ip, polygon);
+        boolean turn = checkOrientation(ip, polygon);
         if (turn) {
-            ip = ip.rotateRight();
-            polygon = findCard(ip, irregular);
-            imp = new ImagePlus(imp.getTitle(), ip);
-            //imp.show();
+            preprocessedIp = preprocessedIp.rotateRight();
+            polygon = findCard(preprocessedIp, irregular);
+            preprocessedImp = new ImagePlus(imp.getTitle(), preprocessedIp);
         }
 
         PointRoi pointsRoi = new PointRoi(polygon.xpoints, polygon.ypoints, polygon.npoints);
-        imp.setRoi(pointsRoi);
+        preprocessedImp.setRoi(pointsRoi);
 
         int[] xnew = new int[4];
         int[] ynew = new int[4];
-        getNewPoints(ip, polygon, xnew, ynew);
+        getNewPoints(preprocessedIp, polygon, xnew, ynew);
 
         PointRoi newPoints = new PointRoi(xnew, ynew, 4);
-        ImagePlus impPerspective = PerspectiveTransform.transform(imp, newPoints);
-        //impPerspective.show();
+        ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, newPoints);
+        impPerspective.show();
 
         ImageProcessor ipPerspective = impPerspective.getChannelProcessor();
 
