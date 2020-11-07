@@ -19,7 +19,7 @@ import ij.io.Opener;
 
 import java.awt.*;
 
-public class Correct_Ilumination implements PlugInFilter {
+public class Correct_Illumination implements PlugInFilter {
     ImagePlus imp;
 
     public int setup(String arg, ImagePlus imp) {

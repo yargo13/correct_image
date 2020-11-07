@@ -84,7 +84,7 @@
 
 	<properties>
 		<package-name>com.yargo.imagej</package-name>
-		<main-class>com.yargo.imagej.Correct_Ilumination</main-class>
+		<main-class>com.yargo.imagej.Correct_Illumination</main-class>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>My Company, Inc.</license.copyrightOwners>
 	</properties>

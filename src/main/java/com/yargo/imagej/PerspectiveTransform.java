@@ -14,7 +14,7 @@ import java.util.List;
 
 public class PerspectiveTransform {
     public static ImagePlus transform(ImagePlus source, PointRoi newPoints) {
-        /**
+        /*
          * Use two sets of {@link PointRoi landmarks} selected in two images to map
          * one image to the other.
          *

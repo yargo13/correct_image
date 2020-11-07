@@ -180,11 +180,10 @@ public class Correct_Image implements PlugInFilter {
             }
         }
 
-        Polygon polygon = new Polygon(xretang, yretang, 4);
-        return polygon;
+        return new Polygon(xretang, yretang, 4);
     }
 
-    public static int findIrregularRectangle(ImageProcessor ip, Polygon polygon) {
+    public static int findIrregularRectangle(Polygon polygon) {
         /*
          * Verifica diferencas entre pontos consecutivos do retangulo tanto em x como em y
          * Se a o modulo da variacao em uma das dimensoes for pequeno apos 3 pontos, assume-se que estao proximos
@@ -292,7 +291,7 @@ public class Correct_Image implements PlugInFilter {
         calibration.setUnit("cm");
     }
 
-    public static void checkSize(ImageProcessor ip, int[] xnew, int[] ynew, Rectangle r) {
+    public static void checkSize(ImageProcessor ip, Rectangle r) {
         ImageProcessor ipByte = ip.convertToByte(false);
         int v = ipByte.get((int) r.getMinX() + 5, (int) r.getMinY() + 5);
         int u = ipByte.get((int) (r.getMinX() + r.getWidth() * 0.20 / (widthBlackExt) + 5), (int) (r.getMinY() + r.getHeight() * 0.20 / (widthBlackExt) + 5));
@@ -347,13 +346,12 @@ public class Correct_Image implements PlugInFilter {
 
         }
         //IJ.log("Values[0] "+values[0]+ " Values[1] "+values[1]);
-        if (values[0] > values[1]) superior = false;
-        else superior = true;
+        superior = !(values[0] > values[1]);
     }
 
     public static ImageProcessor findModel(ImageProcessor ip, PointRoi points, int position) {
         Rectangle r = points.getBounds();
-        double xCenterSquare = 0, yCenterSquare = 0;
+        double xCenterSquare, yCenterSquare;
         int x = 0, y = 0, width = 0, height = 0;
         switch (position) {
             case 1:
@@ -386,7 +384,7 @@ public class Correct_Image implements PlugInFilter {
         ImageProcessor ipThresh = ipByte.duplicate();
         int w = ipThresh.getWidth();
         int h = ipThresh.getHeight();
-        int v, xi = 0, yj = 0;
+        int v;
         double max = -2;
         double min = 256;
         for (int i = 0; i < h * w; i++) {
@@ -394,7 +392,7 @@ public class Correct_Image implements PlugInFilter {
             if (v > max) max = v;
             if (v < min) min = v;
         }
-        double threshold = 0;
+        double threshold;
         if (max > 190 && min > 90) {
             threshold = (max + min) * 0.5;
             ipThresh.threshold((int) threshold);
@@ -402,11 +400,8 @@ public class Correct_Image implements PlugInFilter {
             ipThresh.autoThreshold();
         }
 
-        //IJ.log("Max: "+max+" Min: "+min+" Thresh: "+(int)threshold);
-
-        ImagePlus impThresh = new ImagePlus("Threshold", ipThresh);
         Wand wand = new Wand(ipThresh);
-        Polygon polygon = null;
+        Polygon polygon;
         r = ipThresh.getRoi();
         double area = r.getHeight() * r.getWidth();
         int xWand = (int) (r.getCenterX() + r.getWidth() * 40.5 / 100);
@@ -428,12 +423,6 @@ public class Correct_Image implements PlugInFilter {
         ipByte.setRoi(r);
         ipByte = ipByte.crop();
 
-        impThresh.setRoi(new PolygonRoi(polygon, Roi.POLYGON));
-        //impThresh.show();
-
-        ImagePlus impByte = new ImagePlus("Model", ipByte);
-        //impByte.show();
-
         return ipByte;
     }
 
@@ -451,17 +440,14 @@ public class Correct_Image implements PlugInFilter {
                 }
             }
         }
-        Rectangle rPSF = null;
+        Rectangle rPSF;
         int min = Math.min(x, y);
         min = Math.min(min, 7);
         rPSF = new Rectangle(x - min, y - min, 2 * min + 1, 2 * min + 1);
         ipPSF.setRoi(rPSF);
         ipPSF = ipPSF.crop();
 
-        ImagePlus psf = new ImagePlus("PSF", ipPSF);
-        //psf.show();
-
-        return psf;
+        return new ImagePlus("PSF", ipPSF);
     }
 
     public static double[][] averageRGB(ImageProcessor ip, PointRoi newpoints) {
@@ -519,75 +505,6 @@ public class Correct_Image implements PlugInFilter {
         return averageValues;
     }
 
-    public static double[][] calculateCorrectionPlane(double[][] averageValues, double[][] tableValues) {
-        double[][] M = new double[4][numberOfPatches];
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < (averageValues.length); j++) {
-                if (i != 3) M[i][j] = averageValues[j][i];
-                else M[i][j] = 1;
-            }
-        }
-        Matrix TMatrix = new Matrix(tableValues);
-        TMatrix = TMatrix.transpose();
-        Matrix MMatrix = new Matrix(M);
-        Matrix correctionMatrix = MMatrix.solveTranspose(TMatrix);
-
-        System.out.print("Correction plane");
-        TMatrix.print(2, 4);
-        MMatrix.print(2, 4);
-        correctionMatrix.print(2, 4);
-        return correctionMatrix.getArray();
-    }
-
-    public static ImageProcessor applyCorrectionPlaneLAB(double[][] correction, ImageProcessor ip) {
-        ImageProcessor plane = ip.duplicate();
-        int h = ip.getHeight();
-        int w = ip.getWidth();
-        int v;
-        double[] tempRGB = new double[3];
-        int[] finalRGB = new int[3];
-        double[] tempLAB = new double[3];
-        double[] finalLAB = new double[3];
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                v = ip.get(i, j);
-                ColorTools.extractRGB(v, tempRGB);
-                tempLAB = ColorTools.convertRGBtoLAB(tempRGB);
-                for (int k = 0; k < 3; k++) {
-                    finalLAB[k] = (correction[0][k] * tempLAB[0] + correction[1][k] * tempLAB[1] + correction[2][k] * tempLAB[2] + correction[3][k] * 1);
-                }
-                finalRGB = ColorTools.convertLABtoRGB(finalLAB);
-                plane.putPixel(i, j, finalRGB);
-            }
-        }
-        return plane;
-    }
-
-    public static ImageProcessor applyCorrectionPlane(double[][] correction, ImageProcessor ip) {
-        ImageProcessor plane = ip.duplicate();
-        int h = ip.getHeight();
-        int w = ip.getWidth();
-        int v;
-        double[] tempRGB = new double[3];
-        int[] finalRGB = new int[3];
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                v = ip.get(i, j);
-                ColorTools.extractRGB(v, tempRGB);
-
-                for (int k = 0; k < 3; k++) {
-                    finalRGB[k] = (int) (correction[0][k] * tempRGB[0] + correction[1][k] * tempRGB[1] + correction[2][k] * tempRGB[2] + correction[3][k]);
-                }
-                for (int k = 0; k < 3; k++) {
-                    if (finalRGB[k] > 255) finalRGB[k] = 255;
-                    if (finalRGB[k] < 0) finalRGB[k] = 0;
-                }
-                plane.putPixel(i, j, finalRGB);
-            }
-        }
-        return plane;
-    }
-
     public double meanColorDifference(double[][] averageValues, double[][] tableValues) {
         double sum = 0, partialSum;
         for (int i = 0; i < averageValues.length; i++) {
@@ -641,7 +558,7 @@ public class Correct_Image implements PlugInFilter {
         double[] modelArrayNorm = new double[(w - 4) * (h - 4)];
         double[] baseArrayNorm = new double[(w - 4) * (h - 4)];
 
-        InputStream is = Correct_Ilumination.class.getResourceAsStream("/Modelo.tif");
+        InputStream is = Correct_Illumination.class.getResourceAsStream("/Modelo.tif");
         Opener opener = new Opener();
         ImagePlus imBase = opener.openTiff(is, "Modelo");
         ImageProcessor ipBase = imBase.getProcessor();
@@ -812,7 +729,7 @@ public class Correct_Image implements PlugInFilter {
 
         ip.setBackgroundValue(0);
         Polygon polygon = findCard(ip, 0);
-        int irregular = findIrregularRectangle(ip, polygon);
+        int irregular = findIrregularRectangle(polygon);
 
         if (irregular != 0) {
             imp = enlargeCanvas(imp, -12.5);
@@ -824,7 +741,7 @@ public class Correct_Image implements PlugInFilter {
             irregular = 0;
         }
 
-        irregular = findIrregularRectangle(ip, polygon);
+        irregular = findIrregularRectangle(polygon);
         if (irregular == 3) {
             IJ.log("Tá Errado");
             polygon = findCard(ip, irregular);
@@ -853,7 +770,7 @@ public class Correct_Image implements PlugInFilter {
         ImageProcessor ipPerspective = impPerspective.getChannelProcessor();
 
         Rectangle r = newPoints.getBounds();
-        checkSize(ipPerspective, xnew, ynew, r);
+        checkSize(ipPerspective, r);
         checkSuperior(ipPerspective, newPoints);
 
         double[] resultsBefore = new double[3];
@@ -953,13 +870,13 @@ public class Correct_Image implements PlugInFilter {
 
             ImageProcessor ipPlane;
             if (algorithmChoice == "Plane") {
-                double[][] correctionPlane = calculateCorrectionPlane(averageRGBDeconvolved, tableRGB);
-                ipPlane = applyCorrectionPlane(correctionPlane, ipDeconvolved);
+                double[][] correctionPlane = ColorCorrection.calculateCorrectionPlane(averageRGBDeconvolved, tableRGB);
+                ipPlane = ColorCorrection.applyCorrectionPlane(correctionPlane, ipDeconvolved);
             } else {
                 //double[][] correctionDID = _Dumpster.calculateCorrectionDID(averageRGBDeconvolved, tableRGB);
                 //ipPlane = _Dumpster.applyCorrectionDID(correctionDID, ipDeconvolved);
-                double[][] correctionThin = _Dumpster.calculateCorrectionThin(averageRGBDeconvolved, tableRGB);
-                ipPlane = _Dumpster.applyCorrectionThin(correctionThin, averageRGBDeconvolved, ipDeconvolved);
+                double[][] correctionThin = ColorCorrection.calculateCorrectionThin(averageRGBDeconvolved, tableRGB);
+                ipPlane = ColorCorrection.applyCorrectionThin(correctionThin, averageRGBDeconvolved, ipDeconvolved);
             }
             //
             //double[][] correctionPlane = calculateCorrectionPlane(averageLABDeconvolved, tableValuesLAB);
