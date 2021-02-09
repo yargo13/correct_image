@@ -3,6 +3,7 @@
 /.idea
 /.settings/
 /target/
+/out/
 /.idea/workspace.xml
 /.idea/tasks.xml
 /.idea/usage_statistics.xml
