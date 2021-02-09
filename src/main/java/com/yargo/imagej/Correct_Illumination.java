@@ -7,7 +7,6 @@
  */
 
 package com.yargo.imagej;
-/* o seu caralho de merda funfa naversao nova AGORA 2*/
 
 import ij.IJ;
 import ij.ImageJ;
