@@ -90,7 +90,7 @@ public class Correct_Illumination implements PlugInFilter {
      */
     public static void main(String[] args) {
         // set the plugins.dir property to make the plugin appear in the Plugins menu
-        Class<?> clazz = Correct_Illumination.class;
+        Class<?> clazz = Correct_Image.class;
         String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
         String pluginsDir = url.substring("file:".length(), url.length() - clazz.getName().length() - ".class".length());
         System.setProperty("plugins.dir", pluginsDir);

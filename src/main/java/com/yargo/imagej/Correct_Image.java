@@ -728,7 +728,6 @@ public class Correct_Image implements PlugInFilter {
         ImageProcessor preprocessedIp = ip.duplicate();
         preprocessedIp.setBackgroundValue(0);
         ImagePlus preprocessedImp = new ImagePlus("Preprocessed", preprocessedIp);
-        preprocessedImp.show();
 
         Polygon polygon = findCard(preprocessedIp, 0);
         int irregular = findIrregularRectangle(polygon);
@@ -757,6 +756,7 @@ public class Correct_Image implements PlugInFilter {
 
         PointRoi pointsRoi = new PointRoi(polygon.xpoints, polygon.ypoints, polygon.npoints);
         preprocessedImp.setRoi(pointsRoi);
+        preprocessedImp.show();
 
         int[] xnew = new int[4];
         int[] ynew = new int[4];
