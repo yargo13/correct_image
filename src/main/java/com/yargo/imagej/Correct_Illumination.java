@@ -79,29 +79,4 @@ public class Correct_Illumination implements PlugInFilter {
         impFinal.show();
     }
 
-    /**
-     * Main method for debugging.
-     * <p>
-     * For debugging, it is convenient to have a method that starts ImageJ, loads
-     * an image and calls the plugin, e.g. after setting breakpoints.
-     *
-     * @param args unused
-     */
-    public static void main(String[] args) {
-        // set the plugins.dir property to make the plugin appear in the Plugins menu
-        Class<?> clazz = Correct_Image.class;
-        String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
-        String pluginsDir = url.substring("file:".length(), url.length() - clazz.getName().length() - ".class".length());
-        System.setProperty("plugins.dir", pluginsDir);
-
-        // start ImageJ
-        new ImageJ();
-
-        // open the Clown sample
-        ImagePlus image = (new Opener()).openImage("");
-        image.show();
-
-        // run the plugin
-        IJ.runPlugIn(clazz.getName(), "");
-    }
 }

@@ -2,6 +2,7 @@ package com.yargo.imagej;
 
 import Jama.Matrix;
 import ij.IJ;
+import ij.ImageJ;
 import ij.ImagePlus;
 import ij.Undo;
 import ij.gui.GenericDialog;
@@ -708,7 +709,6 @@ public class Correct_Image implements PlugInFilter {
     	RGBM.print(2, 4);
         return;
         */
-
         IJ.log("\\Clear");
         IJ.log("" + imp.getTitle());
         tic();
@@ -908,13 +908,34 @@ public class Correct_Image implements PlugInFilter {
 
         calibrateImage(impPerspective);
         toc();
-        //IJ.selectWindow("Log");
-        //IJ.saveAs("Text", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Logs\\"+imp.getTitle());
         IJ.log(resultText);
 
-
-        //IJ.saveAs(impPerspective, "png", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Perspectiva\\"+impPerspective.getTitle());
-        //IJ.saveAs(impCorrected, "png", "C:\\Users\\Yargo\\Desktop\\PTC2892\\Iniciação\\Fotos\\Carlos Eduardo - Projeto\\Corrigida\\"+impCorrected.getTitle());
-
     }
+
+    /**
+     * Main method for debugging.
+     * <p>
+     * For debugging, it is convenient to have a method that starts ImageJ, loads
+     * an image and calls the plugin, e.g. after setting breakpoints.
+     *
+     * @param args unused
+     */
+    public static void main(String[] args) {
+        // set the plugins.dir property to make the plugin appear in the Plugins menu
+        Class<?> clazz = Correct_Image.class;
+        String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
+        String pluginsDir = url.substring("file:".length(), url.length() - clazz.getName().length() - ".class".length());
+        System.setProperty("plugins.dir", pluginsDir);
+
+        // start ImageJ
+        new ImageJ();
+
+        // open the Clown sample
+        ImagePlus image = (new Opener()).openImage("");
+        image.show();
+
+        // run the plugin
+        IJ.runPlugIn(clazz.getName(), "");
+    }
+
 }
