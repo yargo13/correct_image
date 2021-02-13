@@ -111,5 +111,19 @@
 			<artifactId>jama</artifactId>
 			<version>1.0.3</version>
 		</dependency>
+		<dependency>
+			<groupId>com.sample</groupId>
+			<artifactId>parallel_iterative_deconvolution</artifactId>
+			<version>1.9</version>
+			<scope>system</scope>
+			<systemPath>${pom.basedir}/libs/parallel_iterative_deconvolution-1.9.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.sample</groupId>
+			<artifactId>parallelcolt</artifactId>
+			<version>0.7.2</version>
+			<scope>system</scope>
+			<systemPath>${pom.basedir}/libs/parallelcolt-0.7.2.jar</systemPath>
+		</dependency>
 	</dependencies>
 </project>
