@@ -6,17 +6,31 @@ perpendicular to the image, then tries to improve resolution and finally calibra
 
 ## Publication
 
-* TESSARO, Y. V.; FURUIE, S. S. . Metodologia para Calibrar e Restaurar Imagens em 
-  Teledermatologia. In: XXV Congresso Brasileiro de Engenharia Biomédica, 2016, 
-  Foz do Iguaçu. ANAIS DO XXV CBEB - EDIÇÃO 2016, 2016. p. 983-986
-  
-* TESSARO, Y. V.; FURUIE, S. S. . Abordagem para Melhorar e Avaliar a Qualidade de 
-  Imagens em Teledermatologia. In: Simpósio de Instrumentação e Imagens Médicas, 2015,
-  Campinas. Anais do VII SIIM/VI SPS, 2015, 2015. v. 2015. p. 133-136.
+* Yargo V. Tessaro, Sérgio S. Furuie, Denise M. Nakamura,
+  "Objective color calibration for manufacturing facial prostheses,"
+  J. Biomed. Opt. 26(2), 025002 (2021), doi: 10.1117/1.JBO.26.2.025002.
 
+* Yargo V. Tessaro, Sérgio S. Furuie,
+  "Metodologia para Calibrar e Restaurar Imagens em Teledermatologia".
+  Anais Do XXV CBEB - Edição 2016. p. 983-986
+  
+* Yargo V. Tessaro, Sérgio S. Furuie,
+  "Abordagem para Melhorar e Avaliar a Qualidade de Imagens em Teledermatologia". 
+  Anais do VII SIIM/VI SPS, 2015. p. 133-136.
 
 ## Installing
 
+For a simple installation, simply download the
+[latest relase](https://github.com/yargo13/correct_image/releases/)
+and place it inside the `/plugins` folder of your
+[ImageJ installation](https://imagej.nih.gov/ij/download.html)
+
+
+## Contributing
+
+In progress...
+
+<!---
 * In [Eclipse](http://eclipse.org), for example, it is as simple as
   _File&gt;Import...&gt;Existing Maven Project_.
 
@@ -56,3 +70,5 @@ for information how ImageJ makes it easier to debug in IDEs.
 
 This ensures that the final `.jar` file will also be copied to your ImageJ
 plugins folder everytime you run the Maven Build
+
+-->
