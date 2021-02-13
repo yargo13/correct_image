@@ -25,6 +25,9 @@ For a simple installation, simply download the
 and place it inside the `/plugins` folder of your
 [ImageJ installation](https://imagej.nih.gov/ij/download.html)
 
+## Executing
+
+In progress...
 
 ## Contributing
 
