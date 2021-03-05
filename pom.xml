@@ -113,17 +113,55 @@
 		</dependency>
 		<dependency>
 			<groupId>com.sample</groupId>
-			<artifactId>parallel_iterative_deconvolution</artifactId>
+			<artifactId>parallel-iterative-deconvolution</artifactId>
 			<version>1.9</version>
-			<scope>system</scope>
-			<systemPath>${pom.basedir}/libs/parallel_iterative_deconvolution-1.9.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.sample</groupId>
-			<artifactId>parallelcolt</artifactId>
+			<artifactId>parallel-colt</artifactId>
 			<version>0.7.2</version>
-			<scope>system</scope>
-			<systemPath>${pom.basedir}/libs/parallelcolt-0.7.2.jar</systemPath>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>2.5</version>
+				<executions>
+					<execution>
+                        <id>install-parallel-iterative-deconvolution</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<groupId>com.sample</groupId>
+							<artifactId>parallel-iterative-deconvolution</artifactId>
+							<version>1.9</version>
+							<packaging>jar</packaging>
+							<file>${basedir}/libs/parallel_iterative_deconvolution-1.9.jar</file>
+							<packaging>jar</packaging>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install-parallel-colt</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<groupId>com.sample</groupId>
+							<artifactId>parallel-colt</artifactId>
+							<version>0.7.2</version>
+							<packaging>jar</packaging>
+							<file>${basedir}/libs/parallelcolt-0.7.2.jar</file>
+							<packaging>jar</packaging>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
