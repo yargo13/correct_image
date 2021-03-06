@@ -132,7 +132,7 @@
 				<executions>
 					<execution>
                         <id>install-parallel-iterative-deconvolution</id>
-						<phase>initialize</phase>
+						<phase>clean</phase>
 						<goals>
 							<goal>install-file</goal>
 						</goals>
@@ -143,11 +143,12 @@
 							<packaging>jar</packaging>
 							<file>${basedir}/libs/parallel_iterative_deconvolution-1.9.jar</file>
 							<packaging>jar</packaging>
+							<generatePom>true</generatePom>
 						</configuration>
 					</execution>
 					<execution>
 						<id>install-parallel-colt</id>
-						<phase>initialize</phase>
+						<phase>clean</phase>
 						<goals>
 							<goal>install-file</goal>
 						</goals>
@@ -158,6 +159,7 @@
 							<packaging>jar</packaging>
 							<file>${basedir}/libs/parallelcolt-0.7.2.jar</file>
 							<packaging>jar</packaging>
+							<generatePom>true</generatePom>
 						</configuration>
 					</execution>
 				</executions>
