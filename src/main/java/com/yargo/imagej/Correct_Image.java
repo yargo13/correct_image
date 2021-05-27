@@ -87,69 +87,7 @@ public class Correct_Image implements PlugInFilter {
     }
 
 
-    public static void getNewPoints(ImagePlus sourceImp, int[] xnew, int[] ynew) {
-        ImageProcessor source = sourceImp.getProcessor();
-        Polygon polygon = sourceImp.getRoi().getPolygon();
-        int h = source.getHeight();
-        int w = source.getWidth();
 
-        int[] x = polygon.xpoints;
-        int[] y = polygon.ypoints;
-        double area = 0.5 * (x[0] * y[1] + x[1] * y[2] + x[2] * y[3] + x[3] * y[0] - y[0] * x[1] - y[1] * x[2] - y[2] * x[3] - y[3] * x[0]);
-
-        double length;
-        double minLength = 99999;
-        int position = 0;
-
-        //Ve qual é o lado menor, indicando o ponto inicial do segmento
-        for (int i = 0; i < 4; i++) {
-            length = Math.sqrt((x[(i + 1) % 4] - x[i]) * (x[(i + 1) % 4] - x[i]) + (y[(i + 1) % 4] - y[i]) * (y[(i + 1) % 4] - y[i]));
-            if (length < minLength) {
-                minLength = length;
-                position = i;
-            }
-        }
-        minorSide = (int) minLength;
-        majorSide = (int) (area / minLength);
-        xnew[position] = x[position] + w / 20;
-        ynew[position] = y[position] + h / 20;
-
-        if (position == 0) {
-            xnew[1] = xnew[0];
-            xnew[2] = xnew[0] + majorSide;
-            xnew[3] = xnew[0] + majorSide;
-
-            ynew[1] = ynew[0] - minorSide;
-            ynew[2] = ynew[0] - minorSide;
-            ynew[3] = ynew[0];
-
-        } else if (position == 1) {
-            xnew[0] = xnew[1] - majorSide;
-            xnew[2] = xnew[1];
-            xnew[3] = xnew[1] - majorSide;
-
-            ynew[0] = ynew[1];
-            ynew[2] = ynew[1] + minorSide;
-            ynew[3] = ynew[1] + minorSide;
-        } else if (position == 2) {
-            xnew[0] = xnew[2] - majorSide;
-            xnew[1] = xnew[2] - majorSide;
-            xnew[3] = xnew[2];
-
-            ynew[0] = ynew[2] + minorSide;
-            ynew[1] = ynew[2];
-            ynew[3] = ynew[2] + minorSide;
-        } else {
-            xnew[0] = xnew[3];
-            xnew[1] = xnew[3] + majorSide;
-            xnew[2] = xnew[3] + majorSide;
-
-            ynew[0] = ynew[3] - minorSide;
-            ynew[1] = ynew[3] - minorSide;
-            ynew[2] = ynew[3];
-        }
-
-    }
 
     public static void calibrateImage(ImagePlus imp) {
         ij.measure.Calibration calibration = imp.getCalibration();
@@ -592,15 +530,11 @@ public class Correct_Image implements PlugInFilter {
         String algorithmChoice = dialog.getNextChoice();
 
         ImagePlus preprocessedImp = CardFinder.preprocessImage(imp);
-        int[] xnew = new int[4];
-        int[] ynew = new int[4];
-        getNewPoints(preprocessedImp, xnew, ynew);
-
-        PointRoi newPoints = new PointRoi(xnew, ynew, 4);
+        PointRoi newPoints = PerspectiveTransform.getNewPoints(preprocessedImp);
         ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, newPoints);
         impPerspective.show();
 
-        ImageProcessor ipPerspective = impPerspective.getChannelProcessor();
+        ImageProcessor ipPerspective = impPerspective.getProcessor();
 
         Rectangle r = newPoints.getBounds();
         checkSize(ipPerspective, r);
@@ -614,57 +548,59 @@ public class Correct_Image implements PlugInFilter {
             model1 = findModel(ipPerspective, newPoints, 2);
             analyzeModel(model1, resultsBefore, false);
         }
+
+
         if (model1.getHeight() < model1.getWidth() * 3.0 / 4 || model1.getWidth() < model1.getHeight() * 3.0 / 4 || resultsBefore[0] > 0.2) {
             IJ.log("Nao foi possivel detectar o modelo de resolucao");
-            ipDeconvolved = ipPerspective;
-        } else {
-            ImagePlus imPSF;
-            InputStream is = getClass().getResourceAsStream("/Modelo.tif");
-            Opener opener = new Opener();
-
-            ImagePlus modelTIF = opener.openTiff(is, "Modelo");
-
-            double[] resultsModel = {1, 1, 0};
-            double[] resultsTemp = new double[3];
-            int i = 0, sequence = 0, iterationsFinal = 0;
-            if (resultsBefore[2] > 0.62) {
-                resultsModel = resultsBefore.clone();
-                i = 0;
-            }
-            while (i < 100) {
-                ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
-                        "false", Integer.toString(i), "4", "false");
-                imPSF = extractPSF(imX1);
-                ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
-                        "false", "1", "4", "false");
-                ImageProcessor ipModel = impModelDeconv.getChannelProcessor();
-                ipModel = ipModel.convertToByte(false);
-                analyzeModel(ipModel, resultsTemp, false);
-
-                if (resultsTemp[0] * resultsTemp[1] < resultsModel[0] * resultsModel[1]) {
-                    resultsModel[0] = resultsTemp[0];
-                    resultsModel[1] = resultsTemp[1];
-                    resultsModel[2] = resultsTemp[2];
-                    sequence = 0;
-                    iterationsFinal = i;
-                } else sequence += 1;
-                if (sequence >= 15) {
-                    IJ.log("Numero de Iteracoes " + iterationsFinal);
-                    break;
-                }
-                i++;
-            }
-            if (iterationsFinal > 0) {
-                ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
-                        "false", Integer.toString(iterationsFinal), "4", "false");
-                imPSF = extractPSF(imX1);
-                ImagePlus impDeconvolved = Deconvolution.deconvolveColorMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
-                        "false", "1", "4", "false");
-                ipDeconvolved = impDeconvolved.getProcessor();
-            } else ipDeconvolved = ipPerspective;
-            //imPSF.show();
-
+            return;
         }
+
+        ImagePlus imPSF;
+        InputStream is = getClass().getResourceAsStream("/Modelo.tif");
+        Opener opener = new Opener();
+
+        ImagePlus modelTIF = opener.openTiff(is, "Modelo");
+
+        double[] resultsModel = {1, 1, 0};
+        double[] resultsTemp = new double[3];
+        int iter = 0, sequence = 0, iterationsFinal = 0;
+        if (resultsBefore[2] > 0.62) {
+            resultsModel = resultsBefore.clone();
+            iter = 0;
+        }
+        while (iter < 100) {
+            ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                    "false", Integer.toString(iter), "4", "false");
+            imPSF = extractPSF(imX1);
+            ImagePlus impModelDeconv = Deconvolution.deconvolveMRNSD(model1, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                    "false", "1", "4", "false");
+            ImageProcessor ipModel = impModelDeconv.getChannelProcessor();
+            ipModel = ipModel.convertToByte(false);
+            analyzeModel(ipModel, resultsTemp, false);
+
+            if (resultsTemp[0] * resultsTemp[1] < resultsModel[0] * resultsModel[1]) {
+                resultsModel[0] = resultsTemp[0];
+                resultsModel[1] = resultsTemp[1];
+                resultsModel[2] = resultsTemp[2];
+                sequence = 0;
+                iterationsFinal = iter;
+            } else sequence += 1;
+            if (sequence >= 15) {
+                IJ.log("Numero de Iteracoes " + iterationsFinal);
+                break;
+            }
+            iter++;
+        }
+        if (iterationsFinal > 0) {
+            ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model1, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                    "false", Integer.toString(iterationsFinal), "4", "false");
+            imPSF = extractPSF(imX1);
+            ImagePlus impDeconvolved = Deconvolution.deconvolveColorMRNSD(ipPerspective, imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+                    "false", "1", "4", "false");
+            ipDeconvolved = impDeconvolved.getProcessor();
+        } else ipDeconvolved = ipPerspective;
+        //imPSF.show();
+
 
         double[][] averageRGBPerspective = averageRGB(ipPerspective, newPoints);
         double[][] averageLABPerspective = ColorTools.convertRGBtoLAB(averageRGBPerspective);
@@ -694,44 +630,45 @@ public class Correct_Image implements PlugInFilter {
         ImagePlus impCorrected;
         if (meanDifference > 55) {
             IJ.log("Tabela de cores nao localizada");
-        } else {
-            double[][] averageRGBDeconvolved = averageRGB(ipDeconvolved, newPoints);
+            return;
+        }
 
-            ImageProcessor ipCorrected = ColorCorrection.calculateAndApplyCorrection(ipDeconvolved, averageRGBDeconvolved, tableRGB, algorithmChoice);
+        double[][] averageRGBDeconvolved = averageRGB(ipDeconvolved, newPoints);
+
+        ImageProcessor ipCorrected = ColorCorrection.calculateAndApplyCorrection(ipDeconvolved, averageRGBDeconvolved, tableRGB, algorithmChoice);
 
 
-            impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipCorrected);
-            impCorrected.show();
+        impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipCorrected);
+        impCorrected.show();
 
-            double[][] averageRGBPlane = averageRGB(ipCorrected, newPoints);
-            double[][] averageLABPlane = ColorTools.convertRGBtoLAB(averageRGBPlane);
-            double meanDifferencePlane = meanColorDifference(averageLABPlane, tableLAB);
+        double[][] averageRGBPlane = averageRGB(ipCorrected, newPoints);
+        double[][] averageLABPlane = ColorTools.convertRGBtoLAB(averageRGBPlane);
+        double meanDifferencePlane = meanColorDifference(averageLABPlane, tableLAB);
 
-            IJ.log("Mean Difference Antes: " + meanDifference);
-            IJ.log("Mean Difference Depois Plano: " + meanDifferencePlane);
-            printStdErrorMinMax(meanDifferencePlane, averageLABPlane, tableLAB);
+        IJ.log("Mean Difference Antes: " + meanDifference);
+        IJ.log("Mean Difference Depois Plano: " + meanDifferencePlane);
+        printStdErrorMinMax(meanDifferencePlane, averageLABPlane, tableLAB);
 
-            ImageProcessor model1new = findModel(ipCorrected, newPoints, 1);
-            ImageProcessor model2old = findModel(ipPerspective, newPoints, 2);
-            ImageProcessor model2new = findModel(ipCorrected, newPoints, 2);
+        ImageProcessor model1new = findModel(ipCorrected, newPoints, 1);
+        ImageProcessor model2old = findModel(ipPerspective, newPoints, 2);
+        ImageProcessor model2new = findModel(ipCorrected, newPoints, 2);
 
-            double[] resultsAnt1 = new double[3];
-            double[] resultsDep1 = new double[3];
-            double[] resultsAnt2 = new double[3];
-            double[] resultsDep2 = new double[3];
-            analyzeModel(model1, resultsAnt1, true);
-            analyzeModel(model1new, resultsDep1, true);
-            analyzeModel(model2old, resultsAnt2, true);
-            analyzeModel(model2new, resultsDep2, true);
+        double[] resultsAnt1 = new double[3];
+        double[] resultsDep1 = new double[3];
+        double[] resultsAnt2 = new double[3];
+        double[] resultsDep2 = new double[3];
+        analyzeModel(model1, resultsAnt1, true);
+        analyzeModel(model1new, resultsDep1, true);
+        analyzeModel(model2old, resultsAnt2, true);
+        analyzeModel(model2new, resultsDep2, true);
 
-            String resultText2 = QRDecoder.decode(ipCorrected);
-            IJ.log(resultText2);
-            calibrateImage(impCorrected);
+        String resultText2 = QRDecoder.decode(ipCorrected);
+        IJ.log(resultText2);
+        calibrateImage(impCorrected);
 
-            if (shouldClearModel) {
-                impPerspective = clearModel(impPerspective, ipPerspective, newPoints);
-                clearModel(impCorrected, ipCorrected, newPoints);
-            }
+        if (shouldClearModel) {
+            impPerspective = clearModel(impPerspective, ipPerspective, newPoints);
+            clearModel(impCorrected, ipCorrected, newPoints);
         }
 
         calibrateImage(impPerspective);
