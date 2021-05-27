@@ -3,7 +3,19 @@ package com.yargo.imagej;
 import Jama.Matrix;
 import ij.process.ImageProcessor;
 
+import java.awt.*;
+
 public class ColorCorrection {
+
+    public static ImageProcessor calculateAndApplyCorrection(ImageProcessor input, double[][] averageValues, double[][] tableValues, String algorithm) {
+        if (algorithm.equals("Plane")) {
+            double[][] correctionPlane = ColorCorrection.calculateCorrectionPlane(averageValues, tableValues);
+            return applyCorrectionPlane(correctionPlane, input);
+        } else {
+            double[][] correctionThin = ColorCorrection.calculateCorrectionThin(averageValues, tableValues);
+            return applyCorrectionThin(correctionThin, averageValues, input);
+        }
+    }
 
     public static double[][] calculateCorrectionPlane(double[][] averageValues, double[][] tableValues) {
         double[][] M = new double[4][Correct_Image.numberOfPatches];
