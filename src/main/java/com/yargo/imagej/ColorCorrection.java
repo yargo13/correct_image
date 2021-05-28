@@ -1,6 +1,7 @@
 package com.yargo.imagej;
 
 import Jama.Matrix;
+import ij.gui.PointRoi;
 import ij.process.ImageProcessor;
 
 import java.awt.*;
@@ -178,5 +179,28 @@ public class ColorCorrection {
         finalRGB[0] = (int)(somaR);
         finalRGB[1] = (int)(somaG);
         finalRGB[2] = (int)(somaB);
+    }
+
+    public static PointRoi findCenterColors(Rectangle cardRectangle) {
+        double x, y;
+        int[] xp = new int[17];
+        int[] yp = new int[17];
+        int aux = 0;
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 8; j++) {
+                x = cardRectangle.getCenterX() - (7.0 / 2 * Correct_Image.SIDE_PATCH + 7.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide + j * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide;
+                if (Correct_Image.isSuperior)
+                    y = cardRectangle.getCenterY() - (3.0 / 2 * Correct_Image.SIDE_PATCH + 3.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                else
+                    y = cardRectangle.getCenterY() + (1.0 / 2 * Correct_Image.SIDE_PATCH + 1.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                xp[aux] = (int) x;
+                yp[aux] = (int) y;
+                aux++;
+            }
+        }
+        xp[16] = (int) cardRectangle.getCenterX();
+        yp[16] = (int) cardRectangle.getCenterY();
+        PointRoi pr = new PointRoi(xp, yp, 17);
+        return pr;
     }
 }
