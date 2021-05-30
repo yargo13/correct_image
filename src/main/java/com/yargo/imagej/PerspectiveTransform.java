@@ -16,7 +16,7 @@ import java.util.List;
 
 public class PerspectiveTransform {
 
-    public static PointRoi getNewPoints(ImagePlus sourceImp) {
+    public static PointRoi getCardExtremePoints(ImagePlus sourceImp) {
         ImageProcessor source = sourceImp.getProcessor();
         Polygon polygon = sourceImp.getRoi().getPolygon();
         int h = source.getHeight();
@@ -82,7 +82,7 @@ public class PerspectiveTransform {
         return new PointRoi(xnew, ynew, 4);
     }
 
-    public static ImagePlus transform(ImagePlus source, PointRoi newPoints) {
+    public static ImagePlus transform(ImagePlus source, PointRoi cardExtremePoints) {
         /*
          * Use two sets of {@link PointRoi landmarks} selected in two images to map
          * one image to the other.
@@ -98,7 +98,7 @@ public class PerspectiveTransform {
         ipTarget = source.getProcessor().createProcessor(source.getWidth() * 11 / 10, source.getHeight() * 11 / 10);
 
         final List<Point> sourcePoints = Util.pointRoiToPoints((PointRoi) source.getRoi());
-        final List<Point> templatePoints = Util.pointRoiToPoints(newPoints);
+        final List<Point> templatePoints = Util.pointRoiToPoints(cardExtremePoints);
         final int numMatches = Math.min(sourcePoints.size(), templatePoints.size());
         for (int i = 0; i < numMatches; ++i)
             matches.add(new PointMatch(sourcePoints.get(i), templatePoints.get(i)));

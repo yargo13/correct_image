@@ -126,13 +126,15 @@ public class CardFinder {
         return 0;
     }
 
-    public static boolean checkOrientation(ImageProcessor ip, Polygon polygon) {
-        boolean turn = false;
+    public static boolean shouldRotate(ImageProcessor ip, Polygon polygon) {
+        /*
+        Check if the found model is in landscape or portrait model, returning
+        true if it needs a 90 degree rotation
+         */
         Rectangle r = polygon.getBounds();
 
-        if ((r.getHeight() > r.getWidth() && ip.getHeight() > ip.getWidth()) || r.getHeight() > 1.4 * r.getWidth())
-            turn = true;
-        return turn;
+        return (r.getHeight() > r.getWidth() && ip.getHeight() > ip.getWidth())
+                || r.getHeight() > 1.4 * r.getWidth();
     }
 
     public static void enlargeCanvas(ImagePlus imp, double angle) {
@@ -171,8 +173,7 @@ public class CardFinder {
             polygon = findCard(preprocessedIp, irregular);
         }
 
-        boolean turn = checkOrientation(baseProcessor, polygon);
-        if (turn) {
+        if (shouldRotate(baseProcessor, polygon)) {
             preprocessedIp = preprocessedIp.rotateRight();
             polygon = findCard(preprocessedIp, irregular);
             preprocessedImp = new ImagePlus(baseImage.getTitle(), preprocessedIp);

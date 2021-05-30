@@ -24,13 +24,12 @@ public class Correct_Image implements PlugInFilter {
     final static double HEIGHT_BLACK_INT = 4.90;
     final static double SIDE_PATCH = 1.00;
     final static double INTER_DISTANCE = 0.20;
+    final static int NUMBER_OF_PATCHES = 16;
 
     static double width = WIDTH_WHITE;
     static double height = HEIGHT_WHITE;
-
     static int majorSide = 1;
     static int minorSide = 1;
-    static int numberOfPatches = 16;
     static boolean isSuperior = true;
     static boolean shouldClearModel = false;
     static HashMap<String, double[][]> tableValuesRGB = new HashMap<String, double[][]>() {
@@ -90,16 +89,35 @@ public class Correct_Image implements PlugInFilter {
         calibration.setUnit("cm");
     }
 
-    public static void checkSize(ImageProcessor ip, Rectangle r) {
+    public static void defineOuterSize(ImageProcessor ip, Rectangle cardOuterRectangle) {
+        /*
+        Defines in which of the three borders the outer rectangle is located
+        based on pixel intensities of an external point (located at the outer
+        rectangle) and an internal point (located at the distance of a border)
+
+        - If the external value is low (black) and the internal value is high
+        (white), it is the external black border
+        - If the external value is low (black) and the external value is low
+        (black), it is the internal black border
+        - Otherwise, it is the white border
+         */
         ImageProcessor ipByte = ip.convertToByte(false);
-        int v = ipByte.get((int) r.getMinX() + 5, (int) r.getMinY() + 5);
-        int u = ipByte.get((int) (r.getMinX() + r.getWidth() * 0.20 / (WIDTH_BLACK_EXT) + 5), (int) (r.getMinY() + r.getHeight() * 0.20 / (WIDTH_BLACK_EXT) + 5));
-        IJ.log("U: " + u + " V: " + v);
-        if ((u < 50 && u >= 2 * v) || (u >= 50 && u > 1.1 * v)) {
+        int externalValue = ipByte.get(
+                (int) cardOuterRectangle.getMinX() + 5,
+                (int) cardOuterRectangle.getMinY() + 5
+        );
+        int internalValue = ipByte.get(
+                (int) (cardOuterRectangle.getMinX() + 5 + cardOuterRectangle.getWidth() * 0.20 / (WIDTH_BLACK_EXT)),
+                (int) (cardOuterRectangle.getMinY() + 5 + cardOuterRectangle.getHeight() * 0.20 / (WIDTH_BLACK_EXT))
+        );
+        IJ.log("Internal Value: " + internalValue + " External Value: " + externalValue);
+        if ((internalValue < 50 && internalValue >= 2 * externalValue)
+                || (internalValue >= 50 && internalValue > 1.1 * externalValue)) {
             width = WIDTH_BLACK_EXT;
             height = HEIGHT_BLACK_EXT;
             IJ.log("Black Ext");
-        } else if ((u < 50 && u < 2 * v && u > 0.5 * v) || (u >= 50 && u > 1.1 * v && u < 0.9 * v)) {
+        } else if ((internalValue < 50 && internalValue < 2 * externalValue && internalValue > 0.5 * externalValue)
+                || (internalValue >= 50 && internalValue > 1.1 * externalValue && internalValue < 0.9 * externalValue)) {
             width = WIDTH_BLACK_INT;
             height = HEIGHT_BLACK_INT;
             IJ.log("Black Int");
@@ -111,19 +129,27 @@ public class Correct_Image implements PlugInFilter {
 
     }
 
-    public static void checkSuperior(ImageProcessor ip, PointRoi newpoints) {
-        Rectangle r = newpoints.getBounds();
+    public static void defineIsSuperior(ImageProcessor ip, Rectangle cardOuterRectangle) {
+        /*
+        Identify if the card is oriented upwards or downwards based on the
+        location of the white patches
+         */
         double[] rgbSum = new double[3];
         double[] rgbTemp = new double[3];
         int cont;
         int value;
         double x, y;
 
-        //Identificar se cores estão na metade superior ou inferior através do patch em branco.
         double[] values = {0, 0};
         for (int i = -1; i < 2; i += 2) {
-            x = r.getCenterX() - (3.0 / 2 * SIDE_PATCH + 3.0 / 2 * INTER_DISTANCE) / width * majorSide;
-            y = r.getCenterY() + i * (1.0 / 2 * SIDE_PATCH + 1.0 / 2 * INTER_DISTANCE) / height * minorSide;
+            x = (
+                cardOuterRectangle.getCenterX()
+                - (3.0 / 2 * SIDE_PATCH + 3.0 / 2 * INTER_DISTANCE) / width * majorSide
+            );
+            y = (
+                cardOuterRectangle.getCenterY()
+                + i * (1.0 / 2 * SIDE_PATCH + 1.0 / 2 * INTER_DISTANCE) / height * minorSide
+            );
             cont = 0;
             rgbSum[0] = 0;
             rgbSum[1] = 0;
@@ -144,104 +170,12 @@ public class Correct_Image implements PlugInFilter {
             values[(int) ((i + 1) * 0.5)] = Math.sqrt(rgbSum[0] * rgbSum[0] + rgbSum[1] * rgbSum[1] + rgbSum[2] * rgbSum[2]);
 
         }
-        //IJ.log("Values[0] "+values[0]+ " Values[1] "+values[1]);
         isSuperior = !(values[0] > values[1]);
     }
 
-    public static double[][] averageRGB(ImageProcessor ip, PointRoi newpoints) {
-        Rectangle r = newpoints.getBounds();
-        double[] rgbSum = new double[3];
-        double[][] averageValues = new double[numberOfPatches][3];
-        double[] rgbTemp = new double[3];
-        int cont;
-        int value;
-        double x, y;
-
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 8; j++) {
-                x = r.getCenterX() - (7.0 / 2 * SIDE_PATCH + 7.0 / 2 * INTER_DISTANCE) / width * majorSide + j * (SIDE_PATCH + INTER_DISTANCE) / width * majorSide;
-                if (isSuperior)
-                    y = r.getCenterY() - (3.0 / 2 * SIDE_PATCH + 3.0 / 2 * INTER_DISTANCE) / height * minorSide + i * (SIDE_PATCH + INTER_DISTANCE) / height * minorSide;
-                else
-                    y = r.getCenterY() + (1.0 / 2 * SIDE_PATCH + 1.0 / 2 * INTER_DISTANCE) / height * minorSide + i * (SIDE_PATCH + INTER_DISTANCE) / height * minorSide;
-                cont = 0;
-                rgbSum[0] = 0;
-                rgbSum[1] = 0;
-                rgbSum[2] = 0;
-                for (int row = (int) (x - (SIDE_PATCH / 4 * majorSide / width)); row < (int) (x + (SIDE_PATCH / 4 * majorSide / width)); row++) {
-                    for (int col = (int) (y - (SIDE_PATCH / 4 * minorSide / height)); col < (int) (y + (SIDE_PATCH / 4 * minorSide / height)); col++) {
-                        value = ip.get(row, col);
-                        ColorTools.extractRGB(value, rgbTemp);
-                        rgbSum[0] += rgbTemp[0];
-                        rgbSum[1] += rgbTemp[1];
-                        rgbSum[2] += rgbTemp[2];
-                        cont += 1;
-                    }
-                }
-                rgbSum[0] /= cont;
-                rgbSum[1] /= cont;
-                rgbSum[2] /= cont;
-                averageValues[8 * i + j][0] = rgbSum[0];
-                averageValues[8 * i + j][1] = rgbSum[1];
-                averageValues[8 * i + j][2] = rgbSum[2];
-            }
-        }
-        //Verifica cor do patch na primeira linha e primeira coluna e na ultima linha e ultima coluna, vendo qual é maior
-
-        if (!isSuperior) {
-            double[][] rearrangedValues = new double[numberOfPatches][3];
-            for (int i = 0; i < numberOfPatches; i++) {
-                rearrangedValues[i] = averageValues[numberOfPatches - i - 1];
-            }
-            averageValues = rearrangedValues.clone();
-        }
-
-        Matrix correctM = new Matrix(averageValues);
-        correctM.print(2, 4);
-
-
-        return averageValues;
-    }
-
-    public double meanColorDifference(double[][] averageValues, double[][] tableValues) {
-        double sum = 0, partialSum;
-        for (int i = 0; i < averageValues.length; i++) {
-            partialSum = 0;
-            for (int j = 0; j < 3; j++) {
-                partialSum += (averageValues[i][j] - tableValues[i][j]) * (averageValues[i][j] - tableValues[i][j]);
-            }
-            sum += Math.sqrt(partialSum);
-        }
-        return sum / averageValues.length;
-    }
-
-    public void printStdErrorMinMax(double meanDifference, double[][] averageValues, double[][] tableValues) {
-        double sum = 0, partialSum, stdError, minDif = 999, patchMin = 0, maxDif = -1, patchMax = 0;
-        IJ.log("Values Color");
-        for (int i = 0; i < averageValues.length; i++) {
-            partialSum = 0;
-            for (int j = 0; j < 3; j++) {
-                partialSum += (averageValues[i][j] - tableValues[i][j]) * (averageValues[i][j] - tableValues[i][j]);
-            }
-            sum += (Math.sqrt(partialSum) - meanDifference) * (Math.sqrt(partialSum) - meanDifference);
-            //IJ.log(""+Math.sqrt(partialSum));
-            if (Math.abs(Math.sqrt(partialSum)) > maxDif) {
-                maxDif = Math.sqrt(partialSum);
-                patchMax = i;
-            }
-            if (Math.abs(Math.sqrt(partialSum)) < minDif) {
-                minDif = Math.sqrt(partialSum);
-                patchMin = i;
-            }
-        }
-        stdError = Math.sqrt(sum / averageValues.length);
-        IJ.log("Desvio Padrao: " + stdError);
-        IJ.log("Diferenca Minima: " + minDif + " no patch: " + patchMin);
-        IJ.log("Diferenca Maxima: " + maxDif + " no patch: " + patchMax + "\n");
-    }
-
-    public ImagePlus clearModel(ImagePlus imp, ImageProcessor ip, PointRoi points) {
-        ip.setRoi(points.getBounds());
+    public ImagePlus clearCard(ImagePlus input, PointRoi cardExtremePoints) {
+        ImageProcessor ip = input.getProcessor();
+        ip.setRoi(cardExtremePoints.getBounds());
         ip.fill();
         ImageProcessor ipByte = ip.convertToByte(true);
         int h = ip.getHeight();
@@ -262,7 +196,7 @@ public class Correct_Image implements PlugInFilter {
         Rectangle r = new Rectangle(minX, minY, (maxX - minX), (maxY - minY));
         ip.setRoi(r);
         ip = ip.crop();
-        ImagePlus impClear = new ImagePlus(imp.getTitle(), ip);
+        ImagePlus impClear = new ImagePlus(input.getTitle(), ip);
         impClear.show();
         return impClear;
     }
@@ -274,22 +208,10 @@ public class Correct_Image implements PlugInFilter {
 
 
     public void run(ImageProcessor ip) {
-        /*
-    	int[][] RGB = ColorTools.convertLABtoRGB( tableValuesLAB.get("b"));
-    	double[][] doubleRGB = new double[RGB.length][3];
-    	for (int i = 0; i < RGB.length; i++){
-    	    for (int j = 0; j < 3; j++){
-    	        doubleRGB[i][j] = RGB[i][j];
-            }
-        }
-    	Matrix RGBM = new Matrix(doubleRGB);
-    	RGBM.print(2, 4);
-        return;
-        */
         IJ.log("\\Clear");
         IJ.log("" + imp.getTitle());
         tic();
-        String resultText = QRDecoder.decode(ip);
+        String QRTextBefore = QRDecoder.decode(ip);
 
         GenericDialog dialog = new GenericDialog("Selecionar Calibração");
         String[] algorithmOptions = {"Plane", "TPS-3D"};
@@ -303,72 +225,71 @@ public class Correct_Image implements PlugInFilter {
         String algorithmChoice = dialog.getNextChoice();
 
         ImagePlus preprocessedImp = CardFinder.preprocessImage(imp);
-        PointRoi newPoints = PerspectiveTransform.getNewPoints(preprocessedImp);
-        ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, newPoints);
+        PointRoi cardExtremePoints = PerspectiveTransform.getCardExtremePoints(preprocessedImp);
+        ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, cardExtremePoints);
         impPerspective.show();
 
         ImageProcessor ipPerspective = impPerspective.getProcessor();
 
-        Rectangle r = newPoints.getBounds();
-        checkSize(ipPerspective, r);
-        checkSuperior(ipPerspective, newPoints);
+        Rectangle cardOuterRectangle = cardExtremePoints.getBounds();
+        defineOuterSize(ipPerspective, cardOuterRectangle);
+        defineIsSuperior(ipPerspective, cardOuterRectangle);
 
         ImageProcessor model1old;
         try {
-            model1old = ResolutionCorrection.findValidModel(ipPerspective, newPoints);
+            model1old = ResolutionCorrection.findValidModel(ipPerspective, cardExtremePoints);
         } catch (RuntimeException e) {
             return;
         }
         ImagePlus impDeconvolved = ResolutionCorrection.calibrate(impPerspective, model1old);
         ImageProcessor ipDeconvolved = impDeconvolved.getProcessor();
 
-        double[][] averageRGBPerspective = averageRGB(ipPerspective, newPoints);
+        double[][] averageRGBPerspective = ColorCorrection.averageRGB(ipPerspective, cardOuterRectangle, isSuperior);
         double[][] averageLABPerspective = ColorTools.convertRGBtoLAB(averageRGBPerspective);
-        double meanDifference = meanColorDifference(averageLABPerspective, tableLAB);
-
+        double meanDifference = ColorCorrection.meanColorDifference(averageLABPerspective, tableLAB);
         if (meanDifference > 55) {
             IJ.log("Tabela de cores nao localizada");
             return;
         }
 
-        PointRoi pr = ColorCorrection.findCenterColors(r);
-        impPerspective.setRoi(pr);
+        PointRoi centerPointsColors = ColorCorrection.findCenterPointsColors(cardOuterRectangle);
+        impPerspective.setRoi(centerPointsColors);
 
-        double[][] averageRGBDeconvolved = averageRGB(ipDeconvolved, newPoints);
+        double[][] averageRGBDeconvolved = ColorCorrection.averageRGB(ipDeconvolved, cardOuterRectangle, isSuperior);
 
         ImageProcessor ipCorrected = ColorCorrection.calculateAndApplyCorrection(ipDeconvolved, averageRGBDeconvolved, tableRGB, algorithmChoice);
         ImagePlus impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipCorrected);
         impCorrected.show();
 
-        double[][] averageRGBCalibrated = averageRGB(ipCorrected, newPoints);
+        double[][] averageRGBCalibrated = ColorCorrection.averageRGB(ipCorrected, cardOuterRectangle, isSuperior);
         double[][] averageLABCalibrated = ColorTools.convertRGBtoLAB(averageRGBCalibrated);
-        double meanDifferencePlane = meanColorDifference(averageLABCalibrated, tableLAB);
+        double meanDifferenceCalibrated = ColorCorrection.meanColorDifference(averageLABCalibrated, tableLAB);
 
         IJ.log("Mean Difference Before: " + meanDifference);
-        IJ.log("Mean Difference After: " + meanDifferencePlane);
-        printStdErrorMinMax(meanDifferencePlane, averageLABCalibrated, tableLAB);
+        IJ.log("Mean Difference After: " + meanDifferenceCalibrated);
+        ColorCorrection.printStdErrorMinMax(averageLABCalibrated, tableLAB);
 
-        ImageProcessor model1new = ResolutionCorrection.findModel(ipCorrected, newPoints, 1);
-        ImageProcessor model2old = ResolutionCorrection.findModel(ipPerspective, newPoints, 2);
-        ImageProcessor model2new = ResolutionCorrection.findModel(ipCorrected, newPoints, 2);
+        ImageProcessor model1new = ResolutionCorrection.findModel(ipCorrected, cardExtremePoints, 1);
+        ImageProcessor model2old = ResolutionCorrection.findModel(ipPerspective, cardExtremePoints, 2);
+        ImageProcessor model2new = ResolutionCorrection.findModel(ipCorrected, cardExtremePoints, 2);
 
-        double[] resultsAnt1 = ResolutionCorrection.analyzeModel(model1old, true);
-        double[] resultsDep1 = ResolutionCorrection.analyzeModel(model1new, true);
-        double[] resultsAnt2 = ResolutionCorrection.analyzeModel(model2old, true);
-        double[] resultsDep2 = ResolutionCorrection.analyzeModel(model2new, true);
+        double[] resultsBefore1 = ResolutionCorrection.analyzeModel(model1old, true);
+        double[] resultsAfter1 = ResolutionCorrection.analyzeModel(model1new, true);
+        double[] resultsBefore2 = ResolutionCorrection.analyzeModel(model2old, true);
+        double[] resultsAfter2 = ResolutionCorrection.analyzeModel(model2new, true);
 
-        String resultText2 = QRDecoder.decode(ipCorrected);
-        IJ.log(resultText2);
+        String QRTextAfter = QRDecoder.decode(ipCorrected);
+        IJ.log(QRTextAfter);
         calibrateImageSizes(impCorrected);
 
         if (shouldClearModel) {
-            impPerspective = clearModel(impPerspective, ipPerspective, newPoints);
-            clearModel(impCorrected, ipCorrected, newPoints);
+            impPerspective = clearCard(impPerspective, cardExtremePoints);
+            clearCard(impCorrected, cardExtremePoints);
         }
 
         calibrateImageSizes(impPerspective);
         toc();
-        IJ.log(resultText);
+        IJ.log(QRTextBefore);
 
     }
 

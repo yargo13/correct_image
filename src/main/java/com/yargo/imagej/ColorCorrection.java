@@ -1,6 +1,7 @@
 package com.yargo.imagej;
 
 import Jama.Matrix;
+import ij.IJ;
 import ij.gui.PointRoi;
 import ij.process.ImageProcessor;
 
@@ -13,13 +14,13 @@ public class ColorCorrection {
             double[][] correctionPlane = ColorCorrection.calculateCorrectionPlane(averageValues, tableValues);
             return applyCorrectionPlane(correctionPlane, input);
         } else {
-            double[][] correctionThin = ColorCorrection.calculateCorrectionThin(averageValues, tableValues);
-            return applyCorrectionThin(correctionThin, averageValues, input);
+            double[][] correctionTPS = ColorCorrection.calculateCorrectionTPS(averageValues, tableValues);
+            return applyCorrectionTPS(correctionTPS, averageValues, input);
         }
     }
 
     public static double[][] calculateCorrectionPlane(double[][] averageValues, double[][] tableValues) {
-        double[][] M = new double[4][Correct_Image.numberOfPatches];
+        double[][] M = new double[4][Correct_Image.NUMBER_OF_PATCHES];
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < (averageValues.length); j++) {
                 if (i != 3) M[i][j] = averageValues[j][i];
@@ -63,7 +64,7 @@ public class ColorCorrection {
         return plane;
     }
 
-    public static double[][] calculateCorrectionThin(double[][] averageValues, double[][] tableValues) {
+    public static double[][] calculateCorrectionTPS(double[][] averageValues, double[][] tableValues) {
         double[][] rXp = new double[16][16];
         double[][] rYp = new double[16][16];
         double[][] rZp = new double[16][16];
@@ -109,8 +110,8 @@ public class ColorCorrection {
         return mWw.getArray();
     }
 
-    public static ImageProcessor applyCorrectionThin(double[][] correction, double[][] averageValues, ImageProcessor ip){
-        ImageProcessor thin = ip.duplicate();
+    public static ImageProcessor applyCorrectionTPS(double[][] correction, double[][] averageValues, ImageProcessor ip){
+        ImageProcessor ipThin = ip.duplicate();
         int h = ip.getHeight();
         int w = ip.getWidth();
         int v;
@@ -120,14 +121,14 @@ public class ColorCorrection {
             for(int j=0;j<h;j++){
                 v = ip.get(i, j);
                 ColorTools.extractRGB(v, tempRGB);
-                calculatePixelAfterCorrectionThin(correction,averageValues,tempRGB,finalRGB);
-                thin.putPixel(i, j, finalRGB);
+                calculatePixelAfterCorrectionTPS(correction,averageValues,tempRGB,finalRGB);
+                ipThin.putPixel(i, j, finalRGB);
             }
         }
-        return thin;
+        return ipThin;
     }
 
-    public static void calculatePixelAfterCorrectionThin(double[][] correction, double[][] averageValues, double[] tempRGB, int[] finalRGB){
+    public static void calculatePixelAfterCorrectionTPS(double[][] correction, double[][] averageValues, double[] tempRGB, int[] finalRGB){
         double[] rX = new double[16];
         double[] rY = new double[16];
         double[] rZ = new double[16];
@@ -181,26 +182,130 @@ public class ColorCorrection {
         finalRGB[2] = (int)(somaB);
     }
 
-    public static PointRoi findCenterColors(Rectangle cardRectangle) {
+    public static PointRoi findCenterPointsColors(Rectangle cardOuterRectangle) {
         double x, y;
-        int[] xp = new int[17];
-        int[] yp = new int[17];
+        int[] xp = new int[Correct_Image.NUMBER_OF_PATCHES + 1];
+        int[] yp = new int[Correct_Image.NUMBER_OF_PATCHES + 1];
         int aux = 0;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 8; j++) {
-                x = cardRectangle.getCenterX() - (7.0 / 2 * Correct_Image.SIDE_PATCH + 7.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide + j * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide;
+                x = cardOuterRectangle.getCenterX()
+                        - (7.0 / 2 * Correct_Image.SIDE_PATCH + 7.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide
+                        + j * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide;
                 if (Correct_Image.isSuperior)
-                    y = cardRectangle.getCenterY() - (3.0 / 2 * Correct_Image.SIDE_PATCH + 3.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                    y = cardOuterRectangle.getCenterY()
+                            - (3.0 / 2 * Correct_Image.SIDE_PATCH + 3.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide
+                            + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
                 else
-                    y = cardRectangle.getCenterY() + (1.0 / 2 * Correct_Image.SIDE_PATCH + 1.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                    y = cardOuterRectangle.getCenterY()
+                            + (1.0 / 2 * Correct_Image.SIDE_PATCH + 1.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide
+                            + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
                 xp[aux] = (int) x;
                 yp[aux] = (int) y;
                 aux++;
             }
         }
-        xp[16] = (int) cardRectangle.getCenterX();
-        yp[16] = (int) cardRectangle.getCenterY();
-        PointRoi pr = new PointRoi(xp, yp, 17);
-        return pr;
+        xp[Correct_Image.NUMBER_OF_PATCHES] = (int) cardOuterRectangle.getCenterX();
+        yp[Correct_Image.NUMBER_OF_PATCHES] = (int) cardOuterRectangle.getCenterY();
+        return new PointRoi(xp, yp, Correct_Image.NUMBER_OF_PATCHES + 1);
+    }
+
+    public static double[][] averageRGB(ImageProcessor input, Rectangle cardOuterRectangle, boolean isSuperior) {
+        double[] rgbSum = new double[3];
+        double[][] averageValues = new double[Correct_Image.NUMBER_OF_PATCHES][3];
+        double[] rgbTemp = new double[3];
+        int cont;
+        int value;
+        double x, y;
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 8; j++) {
+                x = cardOuterRectangle.getCenterX()
+                        - (7.0 / 2 * Correct_Image.SIDE_PATCH + 7.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide
+                        + j * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.width * Correct_Image.majorSide;
+                if (isSuperior)
+                    y = cardOuterRectangle.getCenterY()
+                            - (3.0 / 2 * Correct_Image.SIDE_PATCH + 3.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide
+                            + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                else
+                    y = cardOuterRectangle.getCenterY()
+                            + (1.0 / 2 * Correct_Image.SIDE_PATCH + 1.0 / 2 * Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide
+                            + i * (Correct_Image.SIDE_PATCH + Correct_Image.INTER_DISTANCE) / Correct_Image.height * Correct_Image.minorSide;
+                cont = 0;
+                rgbSum[0] = 0;
+                rgbSum[1] = 0;
+                rgbSum[2] = 0;
+                for (int row = (int) (x - (Correct_Image.SIDE_PATCH / 4 * Correct_Image.majorSide / Correct_Image.width)); row < (int) (x + (Correct_Image.SIDE_PATCH / 4 * Correct_Image.majorSide / Correct_Image.width)); row++) {
+                    for (int col = (int) (y - (Correct_Image.SIDE_PATCH / 4 * Correct_Image.minorSide / Correct_Image.height)); col < (int) (y + (Correct_Image.SIDE_PATCH / 4 * Correct_Image.minorSide / Correct_Image.height)); col++) {
+                        value = input.get(row, col);
+                        ColorTools.extractRGB(value, rgbTemp);
+                        rgbSum[0] += rgbTemp[0];
+                        rgbSum[1] += rgbTemp[1];
+                        rgbSum[2] += rgbTemp[2];
+                        cont += 1;
+                    }
+                }
+                rgbSum[0] /= cont;
+                rgbSum[1] /= cont;
+                rgbSum[2] /= cont;
+                averageValues[8 * i + j][0] = rgbSum[0];
+                averageValues[8 * i + j][1] = rgbSum[1];
+                averageValues[8 * i + j][2] = rgbSum[2];
+            }
+        }
+
+        //Verifica cor do patch na primeira linha e primeira coluna e na ultima
+        //linha e ultima coluna, vendo qual é maior
+        if (!isSuperior) {
+            double[][] rearrangedValues = new double[Correct_Image.NUMBER_OF_PATCHES][3];
+            for (int i = 0; i < Correct_Image.NUMBER_OF_PATCHES; i++) {
+                rearrangedValues[i] = averageValues[Correct_Image.NUMBER_OF_PATCHES - i - 1];
+            }
+            averageValues = rearrangedValues.clone();
+        }
+
+        Matrix correctM = new Matrix(averageValues);
+        correctM.print(2, 4);
+
+        return averageValues;
+    }
+
+    public static double meanColorDifference(double[][] averageValues, double[][] tableValues) {
+        double sum = 0, partialSum;
+        for (int i = 0; i < averageValues.length; i++) {
+            partialSum = 0;
+            for (int j = 0; j < 3; j++) {
+                partialSum += (averageValues[i][j] - tableValues[i][j]) * (averageValues[i][j] - tableValues[i][j]);
+            }
+            sum += Math.sqrt(partialSum);
+        }
+        return sum / averageValues.length;
+    }
+
+
+    public static void printStdErrorMinMax(double[][] averageValues, double[][] tableValues) {
+        double sum = 0, partialSum, stdError, minDif = 999, patchMin = 0, maxDif = -1, patchMax = 0;
+        double meanDifference = meanColorDifference(averageValues, tableValues);
+        IJ.log("Values Color");
+        for (int i = 0; i < averageValues.length; i++) {
+            partialSum = 0;
+            for (int j = 0; j < 3; j++) {
+                partialSum += (averageValues[i][j] - tableValues[i][j]) * (averageValues[i][j] - tableValues[i][j]);
+            }
+            sum += (Math.sqrt(partialSum) - meanDifference) * (Math.sqrt(partialSum) - meanDifference);
+            //IJ.log(""+Math.sqrt(partialSum));
+            if (Math.abs(Math.sqrt(partialSum)) > maxDif) {
+                maxDif = Math.sqrt(partialSum);
+                patchMax = i;
+            }
+            if (Math.abs(Math.sqrt(partialSum)) < minDif) {
+                minDif = Math.sqrt(partialSum);
+                patchMin = i;
+            }
+        }
+        stdError = Math.sqrt(sum / averageValues.length);
+        IJ.log("Desvio Padrao: " + stdError);
+        IJ.log("Diferenca Minima: " + minDif + " no patch: " + patchMin);
+        IJ.log("Diferenca Maxima: " + maxDif + " no patch: " + patchMax + "\n");
     }
 }
