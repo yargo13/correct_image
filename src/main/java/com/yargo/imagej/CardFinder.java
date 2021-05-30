@@ -32,7 +32,6 @@ public class CardFinder {
         ipByte.medianFilter(); //Filtro da mediana retira parte do ruido de "bordas" virtuais
         if (isIrregular) {
             int threshold = ipByte.getAutoThreshold();
-            IJ.log("" + (int) (0.65 * threshold));
             ipByte.threshold((int) (0.65 * threshold));
         } else {
             ipByte.autoThreshold();
@@ -62,7 +61,6 @@ public class CardFinder {
                     double rarea = r.getWidth() * r.getHeight();
                     if (rarea > area) {
                         area = rarea;
-                        //IJ.log(""+area+" i: "+i+" j: "+j);
                         xi = i;
                         yi = j;
                     }
@@ -120,7 +118,6 @@ public class CardFinder {
 
         for (int i = 0; i < 4; i++) {
             if (deltax[i] < r.getWidth() * 0.15 || deltay[i] < r.getHeight() * 0.15) {
-                IJ.log("Delta x: " + deltax[i] + " Delta y: " + deltay[i]);
                 if (deltax[0] > deltax[3]) {
                     return IrregularTypes.IS_LINE_1;
                 } else return IrregularTypes.IS_LINE_2;

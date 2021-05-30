@@ -46,7 +46,7 @@ public class ResolutionCorrection {
                 iterationsFinal = iter;
             } else sequence += 1;
             if (sequence >= 15) {
-                IJ.log("Numero de Iteracoes " + iterationsFinal);
+                IJ.log("Number of iteractions " + iterationsFinal);
                 break;
             }
             iter++;
@@ -67,7 +67,7 @@ public class ResolutionCorrection {
         int w = model.getWidth();
         double[] results = new double[3];
         if (h < 3.0 / 4 * w || w < 3.0 / 4 * h) {
-            IJ.log("Modelo Invalido");
+            IJ.log("Invalid Model");
             results[0] = 1;
             results[1] = 1;
             results[2] = 0;
@@ -190,7 +190,7 @@ public class ResolutionCorrection {
         }
 
         if (model.getHeight() < model.getWidth() * 3.0 / 4 || model.getWidth() < model.getHeight() * 3.0 / 4 || resultsBefore[0] > 0.2) {
-            IJ.log("Nao foi possivel detectar o modelo de resolucao");
+            IJ.log("It was not possible to detect resolution model");
             throw new RuntimeException();
         }
         return model;

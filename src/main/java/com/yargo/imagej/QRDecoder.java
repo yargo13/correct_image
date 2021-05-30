@@ -23,9 +23,11 @@ public class QRDecoder {
             Result result = reader.decode(bitmap, hints);
             resultText = result.getText();
         } catch (NotFoundException e) {
-            return "Nao Encontrado";
+            return "Error: not found";
         } catch (ChecksumException e) {
+            return "Error: checksum";
         } catch (FormatException e) {
+            return "Error: format";
         }
         return resultText;
     }

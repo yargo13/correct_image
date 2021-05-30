@@ -110,21 +110,20 @@ public class Correct_Image implements PlugInFilter {
                 (int) (cardOuterRectangle.getMinX() + 5 + cardOuterRectangle.getWidth() * 0.20 / (WIDTH_BLACK_EXT)),
                 (int) (cardOuterRectangle.getMinY() + 5 + cardOuterRectangle.getHeight() * 0.20 / (WIDTH_BLACK_EXT))
         );
-        IJ.log("Internal Value: " + internalValue + " External Value: " + externalValue);
         if ((internalValue < 50 && internalValue >= 2 * externalValue)
                 || (internalValue >= 50 && internalValue > 1.1 * externalValue)) {
             width = WIDTH_BLACK_EXT;
             height = HEIGHT_BLACK_EXT;
-            IJ.log("Black Ext");
+            IJ.log("Black External Border");
         } else if ((internalValue < 50 && internalValue < 2 * externalValue && internalValue > 0.5 * externalValue)
                 || (internalValue >= 50 && internalValue > 1.1 * externalValue && internalValue < 0.9 * externalValue)) {
             width = WIDTH_BLACK_INT;
             height = HEIGHT_BLACK_INT;
-            IJ.log("Black Int");
+            IJ.log("Black Internal Border");
         } else {
             width = WIDTH_WHITE;
             height = HEIGHT_WHITE;
-            IJ.log("White");
+            IJ.log("White Border");
         }
 
     }
@@ -211,7 +210,6 @@ public class Correct_Image implements PlugInFilter {
         IJ.log("\\Clear");
         IJ.log("" + imp.getTitle());
         tic();
-        String QRTextBefore = QRDecoder.decode(ip);
 
         GenericDialog dialog = new GenericDialog("Select options");
         String[] algorithmOptions = {"Plane", "TPS-3D"};
@@ -230,6 +228,7 @@ public class Correct_Image implements PlugInFilter {
 
         ImagePlus preprocessedImp = CardFinder.preprocessImage(imp);
         PointRoi cardExtremePoints = PerspectiveTransform.getCardExtremePoints(preprocessedImp);
+        preprocessedImp.setRoi(cardExtremePoints);
         ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, cardExtremePoints);
         impPerspective.show();
 
@@ -259,7 +258,7 @@ public class Correct_Image implements PlugInFilter {
         double[][] averageLABPerspective = ColorTools.convertRGBtoLAB(averageRGBPerspective);
         double meanDifference = ColorCorrection.meanColorDifference(averageLABPerspective, tableLAB);
         if (meanDifference > 55) {
-            IJ.log("Tabela de cores nao localizada");
+            IJ.log("Color table not found");
             return;
         }
 
@@ -269,28 +268,27 @@ public class Correct_Image implements PlugInFilter {
         double[][] averageRGBDeconvolved = ColorCorrection.averageRGB(ipDeconvolved, cardOuterRectangle, isSuperior);
 
         ImageProcessor ipCorrected = ColorCorrection.calculateAndApplyCorrection(ipDeconvolved, averageRGBDeconvolved, tableRGB, algorithmChoice);
-        ImagePlus impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrigida", ipCorrected);
+        ImagePlus impCorrected = new ImagePlus("" + imp.getShortTitle() + "_Corrected", ipCorrected);
         impCorrected.show();
 
         double[][] averageRGBCalibrated = ColorCorrection.averageRGB(ipCorrected, cardOuterRectangle, isSuperior);
         double[][] averageLABCalibrated = ColorTools.convertRGBtoLAB(averageRGBCalibrated);
         double meanDifferenceCalibrated = ColorCorrection.meanColorDifference(averageLABCalibrated, tableLAB);
 
-        IJ.log("Mean Difference Before: " + meanDifference);
-        IJ.log("Mean Difference After: " + meanDifferenceCalibrated);
+        IJ.log("Mean Color Difference Before: " + meanDifference);
+        IJ.log("Mean Color Difference After: " + meanDifferenceCalibrated);
         ColorCorrection.printStdErrorMinMax(averageLABCalibrated, tableLAB);
 
         ImageProcessor model1new = ResolutionCorrection.findModel(ipCorrected, cardExtremePoints, 1);
         ImageProcessor model2old = ResolutionCorrection.findModel(ipPerspective, cardExtremePoints, 2);
         ImageProcessor model2new = ResolutionCorrection.findModel(ipCorrected, cardExtremePoints, 2);
 
-        double[] resultsBefore1 = ResolutionCorrection.analyzeModel(model1old, true);
-        double[] resultsAfter1 = ResolutionCorrection.analyzeModel(model1new, true);
-        double[] resultsBefore2 = ResolutionCorrection.analyzeModel(model2old, true);
-        double[] resultsAfter2 = ResolutionCorrection.analyzeModel(model2new, true);
+        double[] resultsBefore1 = ResolutionCorrection.analyzeModel(model1old, false);
+        double[] resultsAfter1 = ResolutionCorrection.analyzeModel(model1new, false);
+        double[] resultsBefore2 = ResolutionCorrection.analyzeModel(model2old, false);
+        double[] resultsAfter2 = ResolutionCorrection.analyzeModel(model2new, false);
 
-        String QRTextAfter = QRDecoder.decode(ipCorrected);
-        IJ.log(QRTextAfter);
+
         calibrateImageSizes(impCorrected);
 
         if (shouldClearModel) {
@@ -300,7 +298,10 @@ public class Correct_Image implements PlugInFilter {
 
         calibrateImageSizes(impPerspective);
         toc();
-        IJ.log(QRTextBefore);
+
+        String QRText= QRDecoder.decode(ip);
+        if (QRText.contains("Error")) QRText = QRDecoder.decode(ipCorrected);
+        IJ.log("QR Text: " + QRText);
 
     }
 

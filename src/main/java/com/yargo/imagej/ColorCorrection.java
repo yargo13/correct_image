@@ -279,14 +279,12 @@ public class ColorCorrection {
     public static void printStdErrorMinMax(double[][] averageValues, double[][] tableValues) {
         double sum = 0, partialSum, stdError, minDif = 999, patchMin = 0, maxDif = -1, patchMax = 0;
         double meanDifference = meanColorDifference(averageValues, tableValues);
-        IJ.log("Values Color");
         for (int i = 0; i < averageValues.length; i++) {
             partialSum = 0;
             for (int j = 0; j < 3; j++) {
                 partialSum += (averageValues[i][j] - tableValues[i][j]) * (averageValues[i][j] - tableValues[i][j]);
             }
             sum += (Math.sqrt(partialSum) - meanDifference) * (Math.sqrt(partialSum) - meanDifference);
-            //IJ.log(""+Math.sqrt(partialSum));
             if (Math.abs(Math.sqrt(partialSum)) > maxDif) {
                 maxDif = Math.sqrt(partialSum);
                 patchMax = i;
@@ -297,8 +295,8 @@ public class ColorCorrection {
             }
         }
         stdError = Math.sqrt(sum / averageValues.length);
-        IJ.log("Desvio Padrao: " + stdError);
-        IJ.log("Diferenca Minima: " + minDif + " no patch: " + patchMin);
-        IJ.log("Diferenca Maxima: " + maxDif + " no patch: " + patchMax + "\n");
+        IJ.log("Standard Deviation Color: " + stdError);
+        IJ.log("Minimum Difference " + minDif + " at patch: " + patchMin);
+        IJ.log("Maximum Difference" + maxDif + " at patch: " + patchMax + "\n");
     }
 }
