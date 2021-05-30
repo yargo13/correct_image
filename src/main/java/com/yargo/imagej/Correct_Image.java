@@ -30,6 +30,7 @@ public class Correct_Image implements PlugInFilter {
     static int majorSide = 1;
     static int minorSide = 1;
     static boolean isSuperior = true;
+    static boolean shouldSkipResolutionCorrection = false;
     static boolean shouldClearModel = false;
     static HashMap<String, double[][]> tableValuesRGB = new HashMap<String, double[][]>() {
         {
@@ -212,16 +213,20 @@ public class Correct_Image implements PlugInFilter {
         tic();
         String QRTextBefore = QRDecoder.decode(ip);
 
-        GenericDialog dialog = new GenericDialog("Selecionar Calibração");
+        GenericDialog dialog = new GenericDialog("Select options");
         String[] algorithmOptions = {"Plane", "TPS-3D"};
-        dialog.addChoice("Modelo para calibração", tableValuesRGB.keySet().toArray(new String[0]), "Ideal");
-        dialog.addChoice("Algoritmo da calibração", algorithmOptions, "TPS-3D");
+        dialog.addChoice("Calibration Model", tableValuesRGB.keySet().toArray(new String[0]), "Ideal");
+        dialog.addChoice("Calibration Algorithm", algorithmOptions, "TPS-3D");
+        dialog.addCheckbox("Skip resolution correction", false);
+        dialog.addCheckbox("Clear model from final result", false);
         dialog.showDialog();
         if (dialog.wasCanceled()) return;
         String table = dialog.getNextChoice();
         double[][] tableRGB = tableValuesRGB.get(table);
         double[][] tableLAB = tableValuesLAB.get(table);
         String algorithmChoice = dialog.getNextChoice();
+        shouldSkipResolutionCorrection = dialog.getNextBoolean();
+        shouldClearModel = dialog.getNextBoolean();
 
         ImagePlus preprocessedImp = CardFinder.preprocessImage(imp);
         PointRoi cardExtremePoints = PerspectiveTransform.getCardExtremePoints(preprocessedImp);
@@ -240,8 +245,15 @@ public class Correct_Image implements PlugInFilter {
         } catch (RuntimeException e) {
             return;
         }
-        ImagePlus impDeconvolved = ResolutionCorrection.calibrate(impPerspective, model1old);
-        ImageProcessor ipDeconvolved = impDeconvolved.getProcessor();
+
+        ImageProcessor ipDeconvolved;
+        if (!shouldSkipResolutionCorrection) {
+            ImagePlus impDeconvolved = ResolutionCorrection.calibrate(impPerspective, model1old);
+            ipDeconvolved = impDeconvolved.getProcessor();
+        }
+        else {
+            ipDeconvolved = ipPerspective;
+        }
 
         double[][] averageRGBPerspective = ColorCorrection.averageRGB(ipPerspective, cardOuterRectangle, isSuperior);
         double[][] averageLABPerspective = ColorTools.convertRGBtoLAB(averageRGBPerspective);

@@ -32,10 +32,6 @@ public class ColorCorrection {
         Matrix MMatrix = new Matrix(M);
         Matrix correctionMatrix = MMatrix.solveTranspose(TMatrix);
 
-        System.out.print("Correction plane");
-        TMatrix.print(2, 4);
-        MMatrix.print(2, 4);
-        correctionMatrix.print(2, 4);
         return correctionMatrix.getArray();
     }
 
@@ -263,9 +259,6 @@ public class ColorCorrection {
             }
             averageValues = rearrangedValues.clone();
         }
-
-        Matrix correctM = new Matrix(averageValues);
-        correctM.print(2, 4);
 
         return averageValues;
     }
