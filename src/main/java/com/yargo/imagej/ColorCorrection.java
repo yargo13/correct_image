@@ -277,7 +277,8 @@ public class ColorCorrection {
 
 
     public static void printStdErrorMinMax(double[][] averageValues, double[][] tableValues) {
-        double sum = 0, partialSum, stdError, minDif = 999, patchMin = 0, maxDif = -1, patchMax = 0;
+        double sum = 0, partialSum, stdError, minDif = 999, maxDif = -1;
+        int patchMin = 0, patchMax = 0;
         double meanDifference = meanColorDifference(averageValues, tableValues);
         for (int i = 0; i < averageValues.length; i++) {
             partialSum = 0;
@@ -296,7 +297,7 @@ public class ColorCorrection {
         }
         stdError = Math.sqrt(sum / averageValues.length);
         IJ.log("Standard Deviation Color: " + stdError);
-        IJ.log("Minimum Difference " + minDif + " at patch: " + patchMin);
-        IJ.log("Maximum Difference" + maxDif + " at patch: " + patchMax + "\n");
+        IJ.log("Minimum Difference " + minDif + " at patch " + patchMin);
+        IJ.log("Maximum Difference " + maxDif + " at patch " + patchMax + "\n");
     }
 }

@@ -155,7 +155,7 @@ public class CardFinder {
         ImageProcessor baseProcessor = baseImage.getProcessor();
         ImageProcessor preprocessedIp = baseProcessor.duplicate();
         preprocessedIp.setBackgroundValue(0);
-        ImagePlus preprocessedImp = new ImagePlus("Preprocessed", preprocessedIp);
+        ImagePlus preprocessedImp = new ImagePlus(baseImage.getShortTitle() + "_Preprocessed", preprocessedIp);
 
         Polygon polygon = findCard(preprocessedIp, false);
         IrregularTypes irregular = checkIrregularRectangle(polygon);

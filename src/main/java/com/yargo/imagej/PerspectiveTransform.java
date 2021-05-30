@@ -121,7 +121,7 @@ public class PerspectiveTransform {
         mapping = new InverseTransformMapping<InverseCoordinateTransform>(ict);
         ipSource.setInterpolationMethod(ImageProcessor.BILINEAR);
         mapping.mapInterpolated(ipSource, ipTarget);
-        target.setProcessor("" + impSource.getShortTitle() + "_Perspectiva", ipTarget);
+        target.setProcessor("" + impSource.getShortTitle() + "_Perspective", ipTarget);
 
         return target;
     }

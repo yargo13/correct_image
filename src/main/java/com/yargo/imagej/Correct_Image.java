@@ -228,7 +228,8 @@ public class Correct_Image implements PlugInFilter {
 
         ImagePlus preprocessedImp = CardFinder.preprocessImage(imp);
         PointRoi cardExtremePoints = PerspectiveTransform.getCardExtremePoints(preprocessedImp);
-        preprocessedImp.setRoi(cardExtremePoints);
+        // For some reason calling setRoi here bugs the whole process
+        // preprocessedImp.setRoi(cardExtremePoints);
         ImagePlus impPerspective = PerspectiveTransform.transform(preprocessedImp, cardExtremePoints);
         impPerspective.show();
 
