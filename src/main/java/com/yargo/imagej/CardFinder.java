@@ -13,7 +13,11 @@ import java.awt.*;
 
 public class CardFinder {
 
-    public static Polygon findCard(ImageProcessor ip, int irregular) {
+    public enum IrregularTypes {
+        IS_CORRECT, IS_SQUARE, IS_LINE_1, IS_LINE_2
+    }
+
+    public static Polygon findCard(ImageProcessor ip, boolean isIrregular) {
         //Registra dimensoes do ROI
         Rectangle roi = ip.getRoi();
         int r0 = roi.y;
@@ -26,7 +30,7 @@ public class CardFinder {
         int v;
         ipByte.findEdges();
         ipByte.medianFilter(); //Filtro da mediana retira parte do ruido de "bordas" virtuais
-        if (irregular == 3) {
+        if (isIrregular) {
             int threshold = ipByte.getAutoThreshold();
             IJ.log("" + (int) (0.65 * threshold));
             ipByte.threshold((int) (0.65 * threshold));
@@ -96,7 +100,7 @@ public class CardFinder {
 
         return new Polygon(xretang, yretang, 4);
     }
-    public static int findIrregularRectangle(Polygon polygon) {
+    public static IrregularTypes checkIrregularRectangle(Polygon polygon) {
         /*
          * Verifica diferencas entre pontos consecutivos do retangulo tanto em x como em y
          * Se a o modulo da variacao em uma das dimensoes for pequeno apos 3 pontos, assume-se que estao proximos
@@ -108,7 +112,7 @@ public class CardFinder {
         int[] deltay = new int[4];
         int[] xpoints = polygon.xpoints;
         int[] ypoints = polygon.ypoints;
-        if (r.getHeight() > 0.9 * r.getWidth() && r.getHeight() < 1.1 * r.getWidth()) return 3;
+        if (r.getHeight() > 0.9 * r.getWidth() && r.getHeight() < 1.1 * r.getWidth()) return IrregularTypes.IS_SQUARE;
         for (int i = 0; i < 4; i++) {
             deltax[i] = Math.abs(xpoints[i] - xpoints[(i + 1) % 4]);
             deltay[i] = Math.abs(ypoints[i] - ypoints[(i + 1) % 4]);
@@ -116,14 +120,14 @@ public class CardFinder {
 
         for (int i = 0; i < 4; i++) {
             if (deltax[i] < r.getWidth() * 0.15 || deltay[i] < r.getHeight() * 0.15) {
-                IJ.log("Delta x: " + deltax[i] + " Deltay: " + deltay[i]);
+                IJ.log("Delta x: " + deltax[i] + " Delta y: " + deltay[i]);
                 if (deltax[0] > deltax[3]) {
-                    return 1;
-                } else return 2;
+                    return IrregularTypes.IS_LINE_1;
+                } else return IrregularTypes.IS_LINE_2;
             }
         }
 
-        return 0;
+        return IrregularTypes.IS_CORRECT;
     }
 
     public static boolean shouldRotate(ImageProcessor ip, Polygon polygon) {
@@ -137,10 +141,9 @@ public class CardFinder {
                 || r.getHeight() > 1.4 * r.getWidth();
     }
 
-    public static void enlargeCanvas(ImagePlus imp, double angle) {
+    public static void enlargeAndRotateCanvas(ImagePlus imp, double angle) {
         imp.unlock();
-        if (imp.getStackSize() == 1)
-            Undo.setup(Undo.COMPOUND_FILTER, imp);
+        if (imp.getStackSize() == 1) Undo.setup(Undo.COMPOUND_FILTER, imp);
         IJ.run(imp, "Select All", "");
         IJ.run(imp, "Rotate...", "angle=" + angle);
         Roi roi = imp.getRoi();
@@ -151,31 +154,32 @@ public class CardFinder {
     }
 
     public static ImagePlus preprocessImage(ImagePlus baseImage) {
+        // TODO: Refactor this and findCard to make more sense
         ImageProcessor baseProcessor = baseImage.getProcessor();
         ImageProcessor preprocessedIp = baseProcessor.duplicate();
         preprocessedIp.setBackgroundValue(0);
         ImagePlus preprocessedImp = new ImagePlus("Preprocessed", preprocessedIp);
 
-        Polygon polygon = findCard(preprocessedIp, 0);
-        int irregular = findIrregularRectangle(polygon);
+        Polygon polygon = findCard(preprocessedIp, false);
+        IrregularTypes irregular = checkIrregularRectangle(polygon);
 
-        if (irregular != 0) {
-            enlargeCanvas(preprocessedImp, -12.5);
-            preprocessedIp = preprocessedImp.getChannelProcessor();
+        if (irregular != IrregularTypes.IS_CORRECT) {
+            enlargeAndRotateCanvas(preprocessedImp, -12.5);
+            preprocessedIp = preprocessedImp.getProcessor();
             preprocessedIp.setBackgroundValue(0);
-            if (irregular == 1) preprocessedIp.rotate(-12.5);
+            if (irregular == IrregularTypes.IS_LINE_1) preprocessedIp.rotate(-12.5);
             else preprocessedIp.rotate(12.5);
-            polygon = findCard(preprocessedIp, 0);
+            polygon = findCard(preprocessedIp, false);
         }
 
-        irregular = findIrregularRectangle(polygon);
-        if (irregular == 3) {
-            polygon = findCard(preprocessedIp, irregular);
+        irregular = checkIrregularRectangle(polygon);
+        if (irregular == IrregularTypes.IS_SQUARE) {
+            polygon = findCard(preprocessedIp, true);
         }
 
         if (shouldRotate(baseProcessor, polygon)) {
             preprocessedIp = preprocessedIp.rotateRight();
-            polygon = findCard(preprocessedIp, irregular);
+            polygon = findCard(preprocessedIp, irregular == IrregularTypes.IS_CORRECT);
             preprocessedImp = new ImagePlus(baseImage.getTitle(), preprocessedIp);
         }
 

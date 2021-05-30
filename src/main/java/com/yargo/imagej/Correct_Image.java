@@ -1,6 +1,5 @@
 package com.yargo.imagej;
 
-import Jama.Matrix;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;

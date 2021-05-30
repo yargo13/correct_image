@@ -16,9 +16,9 @@ import java.util.List;
 
 public class PerspectiveTransform {
 
-    public static PointRoi getCardExtremePoints(ImagePlus sourceImp) {
-        ImageProcessor source = sourceImp.getProcessor();
-        Polygon polygon = sourceImp.getRoi().getPolygon();
+    public static PointRoi getCardExtremePoints(ImagePlus impSource) {
+        ImageProcessor source = impSource.getProcessor();
+        Polygon polygon = impSource.getRoi().getPolygon();
         int h = source.getHeight();
         int w = source.getWidth();
 
@@ -82,7 +82,7 @@ public class PerspectiveTransform {
         return new PointRoi(xnew, ynew, 4);
     }
 
-    public static ImagePlus transform(ImagePlus source, PointRoi cardExtremePoints) {
+    public static ImagePlus transform(ImagePlus impSource, PointRoi cardExtremePoints) {
         /*
          * Use two sets of {@link PointRoi landmarks} selected in two images to map
          * one image to the other.
@@ -91,13 +91,13 @@ public class PerspectiveTransform {
          * @version 0.2b
          */
         final ArrayList<PointMatch> matches = new ArrayList<PointMatch>();
-        final ImagePlus target = source.createImagePlus();
-        final ImageProcessor ipSource = source.getProcessor();
+        final ImagePlus target = impSource.createImagePlus();
+        final ImageProcessor ipSource = impSource.getProcessor();
         final ImageProcessor ipTarget;
 
-        ipTarget = source.getProcessor().createProcessor(source.getWidth() * 11 / 10, source.getHeight() * 11 / 10);
+        ipTarget = impSource.getProcessor().createProcessor(impSource.getWidth() * 11 / 10, impSource.getHeight() * 11 / 10);
 
-        final List<Point> sourcePoints = Util.pointRoiToPoints((PointRoi) source.getRoi());
+        final List<Point> sourcePoints = Util.pointRoiToPoints((PointRoi) impSource.getRoi());
         final List<Point> templatePoints = Util.pointRoiToPoints(cardExtremePoints);
         final int numMatches = Math.min(sourcePoints.size(), templatePoints.size());
         for (int i = 0; i < numMatches; ++i)
@@ -121,7 +121,7 @@ public class PerspectiveTransform {
         mapping = new InverseTransformMapping<InverseCoordinateTransform>(ict);
         ipSource.setInterpolationMethod(ImageProcessor.BILINEAR);
         mapping.mapInterpolated(ipSource, ipTarget);
-        target.setProcessor("" + source.getShortTitle() + "_Perspectiva", ipTarget);
+        target.setProcessor("" + impSource.getShortTitle() + "_Perspectiva", ipTarget);
 
         return target;
     }

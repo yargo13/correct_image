@@ -12,7 +12,7 @@ import java.io.InputStream;
 
 public class ResolutionCorrection {
 
-    public static ImagePlus calibrate(ImagePlus input, ImageProcessor model) {
+    public static ImagePlus calibrate(ImagePlus impSource, ImageProcessor model) {
         double[] resultsBefore = ResolutionCorrection.analyzeModel(model, false);
 
         ImagePlus imPSF;
@@ -55,9 +55,9 @@ public class ResolutionCorrection {
             ImagePlus imX1 = Deconvolution.deconvolveMRNSD(model, modelTIF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                     "false", Integer.toString(iterationsFinal), "4", "false");
             imPSF = ResolutionCorrection.extractPSF(imX1);
-            return Deconvolution.deconvolveColorMRNSD(input.getProcessor(), imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
+            return Deconvolution.deconvolveColorMRNSD(impSource.getProcessor(), imPSF, "NONE", "-1", "PERIODIC", "AUTO", "SAME_AS_SOURCE", "DOUBLE", "-1", "-1",
                     "false", "1", "4", "false");
-        } return input;
+        } return impSource;
     }
 
     //Analisa modelo aproximadamente quadrado e devolve no vetor results o valor de MSE, Contagem de Threshold e SSIM
@@ -182,11 +182,11 @@ public class ResolutionCorrection {
         return results;
     }
 
-    public static ImageProcessor findValidModel(ImageProcessor input, PointRoi cardPosition) throws RuntimeException {
-        ImageProcessor model = ResolutionCorrection.findModel(input, cardPosition, 1);
+    public static ImageProcessor findValidModel(ImageProcessor ipSource, PointRoi cardExtremePoints) throws RuntimeException {
+        ImageProcessor model = ResolutionCorrection.findModel(ipSource, cardExtremePoints, 1);
         double[] resultsBefore = ResolutionCorrection.analyzeModel(model, false);
         if (model.getHeight() < model.getWidth() * 3.0 / 4 || model.getWidth() < model.getHeight() * 3.0 / 4 || resultsBefore[0] > 0.2) {
-            model = ResolutionCorrection.findModel(input, cardPosition, 2);
+            model = ResolutionCorrection.findModel(ipSource, cardExtremePoints, 2);
         }
 
         if (model.getHeight() < model.getWidth() * 3.0 / 4 || model.getWidth() < model.getHeight() * 3.0 / 4 || resultsBefore[0] > 0.2) {
@@ -196,8 +196,8 @@ public class ResolutionCorrection {
         return model;
     }
 
-    public static ImageProcessor findModel(ImageProcessor ip, PointRoi cardPosition, int position) {
-        Rectangle r = cardPosition.getBounds();
+    public static ImageProcessor findModel(ImageProcessor ipSource, PointRoi cardExtremePoints, int position) {
+        Rectangle r = cardExtremePoints.getBounds();
         double xCenterSquare, yCenterSquare;
         int x = 0, y = 0, width = 0, height = 0;
         switch (position) {
@@ -225,8 +225,8 @@ public class ResolutionCorrection {
                 break;
         }
         Rectangle rSquare = new Rectangle(x, y, width, height);
-        ip.setRoi(rSquare);
-        ImageProcessor ipByte = ip.crop();
+        ipSource.setRoi(rSquare);
+        ImageProcessor ipByte = ipSource.crop();
         ipByte = ipByte.convertToByte(false);
         ImageProcessor ipThresh = ipByte.duplicate();
         int w = ipThresh.getWidth();
@@ -273,8 +273,8 @@ public class ResolutionCorrection {
         return ipByte;
     }
 
-    public static ImagePlus extractPSF(ImagePlus imX) {
-        ImageProcessor ipPSF = imX.getChannelProcessor();
+    public static ImagePlus extractPSF(ImagePlus impSource) {
+        ImageProcessor ipPSF = impSource.getChannelProcessor();
         int x = 0, y = 0, v, max = 0;
         for (int i = 0; i < ipPSF.getWidth() / 5; i++) {
             for (int j = 0; j < ipPSF.getHeight() / 5; j++) {
